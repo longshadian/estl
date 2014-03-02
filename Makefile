@@ -1,7 +1,7 @@
 
 INCLUDE:= 	-I./
 
-CPPFLAGS:= -Wall -std=c++11
+CPPFLAGS:= -g -Wall -std=c++11
 
 OBJS:=	main.o
 
