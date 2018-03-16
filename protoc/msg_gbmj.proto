@@ -1,0 +1,42 @@
+syntax = "proto3";
+package pt.zj;
+
+//option optimize_for = LITE_RUNTIME;
+
+enum RET
+{
+    RET_SUCCESS = 0;
+    RET_ERROR   = 1;
+};
+
+message obj_user
+{
+    enum STATE
+    {
+        S_SUCCESS   = 0;
+        S_SUCCESS_1 = 1;
+        S_SUCCESS_2 = 2;
+    };
+    
+    STATE s = 1;
+    repeated int32 arr = 2;
+};
+
+message obj_test
+{
+    string val_string = 1;
+};
+
+message xx
+{
+    int32 v_1 = 1;
+    int64 v2 = 2;
+    uint32 v_x_3 = 3;
+    obj_test test_1 = 5;
+ repeated obj_user user = 7;
+ string str = 8;
+ RET ret = 9;
+ string userName = 10;
+ bool isBool = 11;
+};
+
