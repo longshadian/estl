@@ -1,0 +1,34 @@
+syntax = "proto3";
+package pt;
+//option optimize_for = LITE_RUNTIME;
+
+message room_client
+{
+	int32 roomid = 1;
+	int32 min_gold = 2;
+	int32 max_gold = 3;
+	int32 max_round = 4;
+	int32 ante = 5;
+	string time = 6;
+	string json_str = 7;
+};
+message room_client_conf
+{
+	repeated room_client data = 1;
+}
+
+message room_server
+{
+	string name = 1;
+	int32 min_gold = 2;
+	int32 max_gold = 3;
+	int32 max_round = 4;
+	int32 ante = 5;
+	string time = 6;
+	string json_str = 7;
+};
+message room_server_conf
+{
+	repeated room_server data = 1;
+}
+

@@ -1,0 +1,85 @@
+#include "RedisCpp.h"
+
+#include <cstdio>
+#include <string>
+#include <chrono>
+
+std::string ip = "127.0.0.1";
+int port = 6379;
+
+struct Performance
+{
+    Performance()
+    {
+        m_start = std::chrono::system_clock::now();
+    }
+
+
+    void stop()
+    {
+        m_end = std::chrono::system_clock::now();
+    }
+
+    long long seconds() const
+    {
+        return std::chrono::duration_cast<std::chrono::seconds>(m_end - m_start).count();
+    }
+
+    long long milliseconds() const
+    {
+        return std::chrono::duration_cast<std::chrono::milliseconds>(m_end - m_start).count();
+    }
+
+    long long microseconds() const
+    {
+        return std::chrono::duration_cast<std::chrono::microseconds>(m_end - m_start).count();
+    }
+    std::chrono::system_clock::time_point m_start;
+    std::chrono::system_clock::time_point m_end;
+};
+
+void testString(rediscpp::RedisString& redis_string, int total)
+{
+    Performance p{};
+    for (int i = 0; i != total; ++i) {
+        auto key = "userid:" + std::to_string(i);
+        redis_string.SET(rediscpp::Buffer(std::move(key)),
+            rediscpp::Buffer(std::to_string(i)));
+    }
+    p.stop();
+    printf("%d %lld %lld\n", total, p.seconds(), p.milliseconds());
+}
+
+int main()
+{
+    auto context = rediscpp::redisConnect(ip, port);
+    if (!context) {
+        printf("error context error\n");
+        return 0;
+    }
+
+    int total = 100000;
+    rediscpp::RedisString redis_string(context);
+    std::array<char, 1024 * 4> data{0};
+
+    long long pseconds = 0;
+    long long pmilliseconds = 0;
+    for (int cnt = 0; cnt != 10; ++cnt) {
+        Performance p{};
+        for (int i = 0; i != total; ++i) {
+            auto key = "userid:" + std::to_string(i);
+            redis_string.SET(rediscpp::Buffer(std::move(key)),
+                rediscpp::Buffer(data.data(), (int)data.size()));
+        }
+        p.stop();
+        auto s = p.seconds();
+        auto ms = p.milliseconds();
+        printf("%d %lld %lld\n", total, s, ms);
+        pseconds += s;
+        pmilliseconds += ms;
+    }
+    printf("-------------------------\n");
+    printf("%d %lld %lld\n", total, pseconds/10, pmilliseconds/10);
+
+    return 0;
+}

@@ -1,0 +1,2 @@
+
+SET_SOURCE_FILES_PROPERTIES(ddzgame c.cpp)

@@ -1,0 +1,179 @@
+#include <iostream>
+#include <memory>
+#include <sstream>
+#include <vector>
+#include <cstdint>
+
+#include <mysql_connection.h>
+#include <mysql_driver.h>
+#include <mysql_error.h>
+#include <cppconn/statement.h>
+#include <cppconn/prepared_statement.h>
+
+const std::string IP = "127.0.0.1:3306";
+const std::string USER = "root";
+const std::string PASSWORD = "123456";
+
+
+bool insertDB()
+{
+    try {
+        sql::Driver * driver = sql::mysql::get_driver_instance();
+        std::unique_ptr<sql::Connection> con{driver->connect(IP, USER, PASSWORD)};
+        std::unique_ptr<sql::Statement> stmt{con->createStatement()};
+
+        uint64_t fidx = 1234567891234567;
+        std::string fname = "s1234567890123456789012345678901234567890";
+
+        for (int i = 0; i != 10; ++i) {
+            std::stringstream stm{};
+            stm << "INSERT INTO txx(fidx, fname) VALUES (";
+            stm << fidx << ", '" << fname << "')";
+            stmt->execute("USE test;");
+            stmt->execute(stm.str());
+        }
+        return true;
+    } catch (const sql::SQLException& e) {
+        printf("ERROR: sql exception %s\n", e.what());
+        return false;
+    }
+}
+
+bool queryDB()
+{
+    try {
+        sql::Driver * driver = sql::mysql::get_driver_instance();
+        std::unique_ptr<sql::Connection> con{ driver->connect(IP, USER, PASSWORD) };
+        con->setSchema("test");
+        std::unique_ptr<sql::Statement> stmt{ con->createStatement() };
+        std::unique_ptr<sql::ResultSet> res(stmt->executeQuery("SELECT fid, fidx, fname FROM txx"));
+
+        printf("res->rowsCount %d\n", (int)res->rowsCount());
+        while (res->next()) {
+            auto fid = res->getInt("fid");
+            auto fidx = res->getInt64("fidx");
+            auto fname = res->getString("fname").asStdString();
+            printf("%d %ld %s\n", fid, fidx, fname.c_str());
+        }
+        return true;
+    } catch (const sql::SQLException& e) {
+        printf("ERROR: sql exception %s\n", e.what());
+        return false;
+    }
+}
+
+bool queryDBEx()
+{
+    try {
+        sql::Driver * driver = sql::mysql::get_driver_instance();
+        std::unique_ptr<sql::Connection> con{ driver->connect(IP, USER, PASSWORD) };
+        con->setSchema("test");
+        std::string str = "SELECT fid, fidx, fname FROM txx";
+        std::unique_ptr<sql::PreparedStatement> pstmt{con->prepareStatement(str)};
+        std::unique_ptr<sql::ResultSet> res(pstmt->executeQuery());
+
+        printf("res->rowsCount %d\n", (int)res->rowsCount());
+        while (res->next()) {
+            auto fid = res->getInt("fid");
+            auto fidx = res->getInt64("fidx");
+            auto fname = res->getString("fname").asStdString();
+            printf("%d %ld %s\n", fid, fidx, fname.c_str());
+        }
+        return true;
+    }
+    catch (const sql::SQLException& e) {
+        printf("ERROR: sql exception %s\n", e.what());
+        return false;
+    }
+}
+
+bool queryDatetime()
+{
+    try {
+        sql::Driver * driver = sql::mysql::get_driver_instance();
+        std::unique_ptr<sql::Connection> con{ driver->connect(IP, USER, PASSWORD) };
+        con->setSchema("test");
+        std::string str = "SELECT fid, fidx, fname, fdatetime, ftext, fdouble FROM txx where fid = 1";
+        std::unique_ptr<sql::Statement> stmt{ con->createStatement() };
+        std::unique_ptr<sql::ResultSet> res(stmt->executeQuery(str));
+
+        printf("res->rowsCount %d\n", (int)res->rowsCount());
+        while (res->next()) {
+            auto fid = res->getInt("fid");
+            auto fidx = res->getInt64("fidx");
+            auto fname = res->getString("fname").asStdString();
+            auto fdatetime = res->getString("fdatetime").asStdString();
+            auto fdouble = res->getDouble("fdouble");
+            printf("%d %ld %s %s %Lf\n", fid, fidx, fname.c_str(), fdatetime.c_str(), fdouble);
+
+            std::string s{};
+            if (res->isNull("ftext")) {
+                s = "null";
+            } else {
+                s = res->getString("ftext");
+            }
+            printf("ftext len %d is %s\n", (int)s.size(), s.c_str());
+        }
+        return true;
+    }
+    catch (const sql::SQLException& e) {
+        printf("ERROR: sql exception %s\n", e.what());
+        return false;
+    }
+}
+
+struct BB : public std::streambuf
+{
+    BB(const uint8_t* p, size_t t)
+    {
+        char* b = (char*)p;
+        setg(b, b, b + t);
+    };
+};
+
+bool testBlob()
+{
+    try {
+        sql::Driver * driver = sql::mysql::get_driver_instance();
+        std::unique_ptr<sql::Connection> con{ driver->connect(IP, USER, PASSWORD) };
+        con->setSchema("test");
+        std::string str = "UPDATE txx set fblob = ? WHERE fid = ?";
+
+        std::unique_ptr<sql::PreparedStatement> pstmt{ con->prepareStatement(str) };
+        pstmt->setInt(2, 1);
+
+        std::vector<uint8_t> val = {1,0,2,3,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1};
+        BB fbuf{val.data(), val.size()};
+        std::istream istm{&fbuf};
+        pstmt->setBlob(1, &istm);
+        pstmt->executeUpdate();
+
+        std::string str_query = "select fblob from txx where fid = 1";
+        std::unique_ptr<sql::Statement> stmt{ con->createStatement() };
+        std::unique_ptr<sql::ResultSet> res(stmt->executeQuery(str_query));
+
+        printf("res->rowsCount %d\n", (int)res->rowsCount());
+        while (res->next()) {
+            auto* fb = res->getBlob("fblob");
+
+            std::vector<uint8_t> fblob_read{};
+            char v;
+            while (fb->get(v)) {
+                std::cout << (int)v << " ";
+            }
+            std::cout << "\n";
+        }
+        return true;
+    } catch (const sql::SQLException& e) {
+        printf("ERROR: sql exception %s\n", e.what());
+        return false;
+    }
+}
+
+
+int main()
+{
+    //insertDB();
+    testBlob();
+    return 0;
+}
