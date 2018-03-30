@@ -46,7 +46,6 @@ enum Value
     Card_2      = 13,
     Card_B      = 14,   // black joker
     Card_R      = 15,   // red joker
-    Card_Count
 };
 
 /// 牌型
@@ -59,10 +58,31 @@ enum class Type
     Type_Double_Ser    = 0x04,	//连对
     Type_Triple        = 0x05,	//三个
     Type_Triple_Ser    = 0x06,	//三顺(飞机)
-    Type_41            = 0x07,	//4带1单
-    Type_31            = 0x08,	//3带1单 AAA + ?
-    Type_Bomb          = 0x09,	//炸弹
-    Type_Mask          = 0x10,	//牌型掩码
+    Type_31            = 0x07,	//3带1单 AAA + ?
+    Type_Bomb          = 0x08,	//炸弹
+    //Type_Mask          = 0x10,	//牌型掩码
+};
+
+/// 牌面值
+enum Face
+{
+    Face_Null   = 0,
+    Face_A      = 1,
+    Face_2      = 2,
+    Face_3      = 3,
+    Face_4      = 4,
+    Face_5      = 5,
+    Face_6      = 6,
+    Face_7      = 7,
+    Face_8      = 8,
+    Face_9      = 9,
+    Face_10     = 10,
+    Face_J      = 11,
+    Face_Q      = 12,
+    Face_K      = 13,
+
+    Face_B      = 14,
+    Face_R      = 15,
 };
 
 /// 卡牌数量
@@ -76,46 +96,61 @@ struct CardType
 {
     CardType();
     CardType(Type type, Value value, int32_t type_len);
+    ~CardType();
+    CardType(const CardType& rhs);
+    CardType& operator=(const CardType& rhs);
+    CardType(CardType&& rhs);
+    CardType& operator=(CardType&& rhs);
 
     bool operator<(const CardType& rhs) const;
     bool operator==(const CardType& rhs) const;
     bool operator!=(const CardType& rhs) const;
 
-     //牌型
+     // 牌型
     Type        m_type;
 
-    //牌值:取得是规则化后主牌的最小值，例如:
-    //JJJ QQQ KKK 33 44 55,这手牌的牌值是J
+    // 牌值:取得是规则化后主牌的最小值，例如:
+    // JJJ QQQ KKK 33 44 55,这手牌的牌值是J
     // A K J Q 10 7 8 9,规则化后AKQJ10987 这牌值是7
     Value       m_value;
 
-    //牌型长度(如果该牌型有长度)
+    // 牌型长度(如果该牌型有长度)
     int32_t     m_type_len;
 };
 
 inline
-int32_t makeColor(Card card, Color color)
+Card makeColor(Card card, Color color)
 {
     return (((card) & 0x0F) | (color) << 4);
 }
 
 inline
-int32_t makeValue(int32_t card, Value value)
+Card makeValue(Card card, Value value)
 {
     return (((card) & 0xF0) | (value));
 }
 
 inline 
-Color getCardColor(int32_t card) 
+Card makeCard(Color color, Value value)
+{
+    Card c{};
+    c = makeColor(c, color);
+    return makeValue(c, value);
+}
+
+inline 
+Color getCardColor(Card card)
 {
     return static_cast<Color>(((card)&0x30) >> 4);
 }
 
 inline 
-Value getCardValue(int32_t card)
+Value getCardValue(Card card)
 {
     return static_cast<Value>((card) & 0x0F);
 }
+
+Face getCardFace(Card card);
 
 /*
 #define setCardColor(card, color)   (((card) & 0x0F) | (color) << 4)
@@ -132,28 +167,17 @@ void initCard(std::vector<Card>& card);
 std::vector<Card> initCard();
 
 /**
- * 检查选中牌能否压过目标牌
- * 注意：src hand无需牌型化,
- *      如果src hand不是合法的牌型，返回false
- * Params   src,src_len 目标牌
- *          hand,hand_len 选中的牌
- * Returns  true:能压过    false:不能压过
- */
-bool check(const Card* src,  int32_t src_len,
-           const Card* hand, int32_t hand_len);
-
-/**
  * 检查选中牌能否压过目标牌,如果src为空或src_len==0，只要检查选中牌是否合法
  * 注意：src hand无需牌型化
  * Params   src,src_len 目标牌
- *          selected,selected_len 选中的牌
+ *          hand, hand_len 选中的牌
  *          out:打出去的牌而且是规则化的。
- *          注意:out缓冲区不能小于selected_len
+ *          注意:out缓冲区不能小于hand_len
  * Returns  true:能压过    false:不能压过
  */
-bool playCard(const Card* src,       int32_t src_len,
-              const Card* selected,  int32_t selected_len,
-              Card* out);
+bool playCard(const Card* src,   int32_t src_len,
+              const Card* hand,  int32_t hand_len,
+              Card* out, CardType* out_type = nullptr);
 
 /**
  * 自动选择选中可以压过目标的牌。类似提示功能
@@ -168,8 +192,8 @@ bool autoSelect(const Card* src,     int32_t src_len,
                 Card* out); 
 
 //去除空牌
-std::vector<Card> removeCardNull(const Card* src, int32_t len);
-std::vector<Card> removeCardNull(const std::vector<Card>& src);
+void removeCardNull(const Card* src, int32_t len, std::vector<Card>* out);
+void removeCardNull(std::vector<Card>* src);
 
 /**
 * 判断出牌类型，输出规则化牌型
@@ -240,15 +264,31 @@ namespace detail {
 
 struct Slot
 {
+    Slot();
+    ~Slot();
+
+    Card popOneCard();
+
+
     Value   m_value;
-    std::array<uint8_t, 4> m_num;   // 4种花色，每种有几张牌
-    uint8_t m_total_num;            // 不管花色，总共有几张
+    std::array<int32_t, 4> m_colors;   // 4种花色，每种有几张牌
+    int32_t m_total_num;            // 不管花色，总共有几张
 };
 
 struct SlotClassify
 {
     SlotClassify();
+    ~SlotClassify();
+    SlotClassify(const SlotClassify& rhs);
+    SlotClassify& operator=(const SlotClassify& rhs);
+    SlotClassify(SlotClassify&& rhs);
+    SlotClassify& operator=(SlotClassify&& rhs);
+
     std::array<Slot, 15> m_slots;               // 总共15种牌
+
+    Slot* getSlotByValue(Value v);
+    const Slot* getSlotByValue(Value v) const;
+
 
     // 按照长度倒序排
     void sortByLengthDesc();
@@ -271,6 +311,30 @@ bool isSeries(const Card* src, int32_t len);
 int32_t isSeries(const SlotClassify& classify, int32_t cnt);
 
 int32_t compareCardType(const CardType& type1, const CardType& type2);
+
+int32_t searchSeries_CalcLen(Card src_min, Card src_max);
+
+bool searchAtomic(SlotClassify* classify, Card src_min, int32_t count, std::vector<Card>* out);
+
+bool searchSeries(SlotClassify* classify
+    , Card src_min
+    , Card src_max
+    , int32_t src_count
+    , std::vector<Card>* out);
+
+bool searchSeries_From3(SlotClassify* classify
+    , Value src_min_val                     // 从哪张牌开始选。
+    , int32_t src_len                   // 长度多少
+    , int32_t src_count                 // 每种牌选几张
+    , std::vector<Card>* out);
+
+bool searchSeries_From2(SlotClassify* classify
+    , int32_t src_len                   // 长度多少
+    , int32_t src_series_count          // 每种牌选几张
+    , std::vector<Card>* out);
+
+bool searchBomb_AAA(SlotClassify* classify, Card src_min, std::vector<Card>* out);
+bool searchBomb(SlotClassify* classify, Card src_min, std::vector<Card>* out);
 
 } // detail
 
