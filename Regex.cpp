@@ -33,7 +33,7 @@ int main()
 {
     //fun(); return 0;
 
-    std::string pattern = R"((\d+)-(\d+)-(\d+) (\d+):(\d+):(\d+)\.(\d+))";
+    //std::string pattern = R"((\d+)-(\d+)-(\d+) (\d+):(\d+):(\d+)\.(\d+))";
 
     std::string pattern = R"((\d+)-(\d+)-(\d+) (\d+):(\d+):(\d+)\.(\d+))";
 
@@ -59,7 +59,7 @@ int main()
 
 
     try {
-        std::string s = "";
+        std::string s = "123";
         std::cout << boost::convert<int>(s, boost::cnv::cstream{}).value() << "\n";
     } catch (...) {
         std::cout << "boost exception\n";
