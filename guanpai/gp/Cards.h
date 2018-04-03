@@ -1,5 +1,6 @@
 #pragma once
 
+#include <array>
 #include <cstdint>
 #include <string>
 #include <vector>
@@ -59,7 +60,8 @@ enum class Type
     Type_Triple        = 0x05,	//三个
     Type_Triple_Ser    = 0x06,	//三顺(飞机)
     Type_31            = 0x07,	//3带1单 AAA + ?
-    Type_Bomb          = 0x08,	//炸弹
+    Type_32            = 0x08,	//3带1对
+    Type_Bomb          = 0x09,	//炸弹
     //Type_Mask          = 0x10,	//牌型掩码
 };
 
@@ -152,14 +154,6 @@ Value getCardValue(Card card)
 
 Face getCardFace(Card card);
 
-/*
-#define setCardColor(card, color)   (((card) & 0x0F) | (color) << 4)
-#define setCardValue(card, value)	(((card) & 0xF0) | (value))
-#define	getCardColor(card)			(((card)&0x30) >> 4)
-#define	getCardValue(card)			((card) & 0x0F)
-#define setCard(color,value)		(((color)<<4) | ((value)&0x0F))
-*/
-
 /** 
  * 初始化牌型
  */
@@ -206,56 +200,13 @@ CardType parseCardType(const Card* src, int32_t len);
 CardType parseCardType(std::vector<Card>* src);
 
 
-//比较牌值大小和花色大小，默认降序
-class PreGreaterSort : public std::binary_function<Card, Card, bool>
-{
-public:
-    bool operator()(Card x, Card y) const
-    {
-        if (x == y)
-            return false;
-        Value x_val = getCardValue(x);
-        Value y_val = getCardValue(y);
-        if (y_val < x_val)
-            return true;
-        if (x_val < y_val)
-            return false;
+// 按照牌值，花色降序 2 A K Q J ... 5 4 3
+std::function<bool(const Card&, const Card&)> sortDesc_Value_Type();
 
-        //牌值相同按花色排序
-        Color x_color = getCardColor(x);
-        Color y_color = getCardColor(y);
-        if (y_color < x_color)
-            return true;
-        if (x_color < y_color)
-            return false;
-        return true;
-    }
-};
+// 按牌面值升序 A 2 3 4 5 6 ... Q K
+std::function<bool(const Card&, const Card&)> sortAsc_Face();
 
-class PreCardValue : public std::unary_function<Card, bool>
-{
-    int32_t val;
-public:
-    PreCardValue(int32_t v) : val(v) {}
-    bool operator()(Card x) const
-    {
-        return val == getCardValue(x);
-    }
-};
-
-/************************************************************************
- * 工具函数                                                                 
- ************************************************************************/
-namespace utility {
-
-struct CardNumString
-{
-    int32_t     m_num;
-    std::string m_string;
-};
-
-} // utility
-
+std::function<bool(const Card&)> equalCardValue(Value value);
 
 /************************************************************************
  * 内部实现
@@ -296,7 +247,7 @@ struct SlotClassify
     int32_t              m_total_num_length;    // 牌长度相同的有几张
 };
 
-void sortCard(std::vector<Card>* src);
+//void sortCard(std::vector<Card>* src);
 
 //int32_t getSameValueSeq(const Card* src, int32_t len, SameSeq* same_seq, bool need_sort);
 
@@ -306,7 +257,8 @@ bool createSlotClassify(const Card* src, int32_t len, SlotClassify* classify);
 void normalizeTypeList(const SlotClassify& classify, std::vector<Card>* out);
 
 /// 判断是否顺子
-bool isSeries(const Card* src, int32_t len);
+bool isSingleSeries(const Card* src, int32_t len);
+bool isSingleSeries_FromA_Or_2(const Card* src, int32_t len, std::vector<Card>* out);
 
 int32_t isSeries(const SlotClassify& classify, int32_t cnt);
 
@@ -333,9 +285,35 @@ bool searchSeries_From2(SlotClassify* classify
     , int32_t src_series_count          // 每种牌选几张
     , std::vector<Card>* out);
 
-bool searchBomb_AAA(SlotClassify* classify, Card src_min, std::vector<Card>* out);
+bool searchBomb_AAA(SlotClassify* classify, std::vector<Card>* out);
 bool searchBomb(SlotClassify* classify, Card src_min, std::vector<Card>* out);
 
 } // detail
+
+
+/************************************************************************
+ * 工具函数                                                                 
+ ************************************************************************/
+namespace utility {
+
+struct CardString
+{
+    Value       m_value;
+    std::string m_str;
+};
+
+
+std::string printCards(const Card* src, int32_t len);
+std::string printCards(const std::vector<Card>& src);
+std::string printCardValue(const std::vector<Card>& src);
+std::string cardTypeToString(Type type);
+std::string cardValueToString(Value value);
+Value stringToCardValue(std::string s);
+void selectCards(std::vector<Card>* src, Value value, std::vector<Card>* out, int32_t n);
+void paddingCardsCount(std::vector<Card>* src, int32_t n, std::vector<Card>* out);
+std::vector<Card> pickCardsFromString(std::string s, std::vector<Card>* all_cards);
+
+
+} // utility
 
 } // gp_alg 

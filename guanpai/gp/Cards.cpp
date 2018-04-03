@@ -7,6 +7,49 @@
 
 namespace gp_alg {
 
+std::function<bool(const Card&, const Card&)> sortDesc_Value_Type()
+{
+    return [](const Card& x, const Card& y) -> bool
+    {
+        if (x == y)
+            return false;
+        Value x_val = getCardValue(x);
+        Value y_val = getCardValue(y);
+        if (y_val < x_val)
+            return true;
+        if (x_val < y_val)
+            return false;
+
+        // 牌值相同按花色排序
+        Color x_color = getCardColor(x);
+        Color y_color = getCardColor(y);
+        if (y_color < x_color)
+            return true;
+        if (x_color < y_color)
+            return false;
+        return true;
+    };
+}
+
+std::function<bool(const Card&, const Card&)> sortAsc_Face()
+{
+    return [](const Card& x, const Card& y)
+    {
+        Face x_f = getCardFace(x);
+        Face y_f = getCardFace(y);
+        if (x_f <= y_f)
+            return true;
+        else 
+            return false;
+    };
+        // return std::bind(&detail::sortAsc_Face, std::placeholders::_1, std::placeholders::_2);
+}
+
+std::function<bool(const Card&)> equalCardValue(Value value)
+{
+    return [=] (const Card& x) { return getCardValue(x) == value; };
+}
+
 Face getCardFace(Card card)
 {
     Value v = getCardValue(card);
@@ -103,7 +146,7 @@ std::vector<Card> initCard()
 {
     std::vector<Card> all_cards{};
     initCard(all_cards);
-    std::sort(all_cards.begin(), all_cards.end(), PreGreaterSort());
+    std::sort(all_cards.begin(), all_cards.end(), sortDesc_Value_Type());
     return all_cards;
 }
 
@@ -174,19 +217,21 @@ bool autoSelect(const Card* src, int32_t src_len
     if (!src || src_len == 0)
         return false;
 
-    std::vector<Card> src_out{};
-    src_out.reserve(src_len);
-    auto src_type = parseCardType(src, src_len, &src_out);
+    std::vector<Card> src_normalize{};
+    src_normalize.reserve(src_len);
+    auto src_type = parseCardType(src, src_len, &src_normalize);
+    if (src_type.m_type == Type::Type_Null)
+        return false;
 
     detail::SlotClassify classify{};
-    if (!detail::createSlotClassify(src, src_len, &classify))
+    if (!detail::createSlotClassify(hand, hand_len, &classify))
         return false;
 
     switch (src_type.m_type) {
     case Type::Type_Signle: {
         std::vector<Card> temp_out;
         temp_out.reserve(hand_len);
-        if (detail::searchAtomic(&classify, src_out[0], 1, &temp_out)) {
+        if (detail::searchAtomic(&classify, src_normalize[0], 1, &temp_out)) {
             std::copy(temp_out.begin(), temp_out.end(), out);
             return true;
         }
@@ -194,7 +239,7 @@ bool autoSelect(const Card* src, int32_t src_len
     } case Type::Type_Double: {
         std::vector<Card> temp_out;
         temp_out.reserve(hand_len);
-        if (detail::searchAtomic(&classify, src_out[0], 2, &temp_out)) {
+        if (detail::searchAtomic(&classify, src_normalize[0], 2, &temp_out)) {
             std::copy(temp_out.begin(), temp_out.end(), out);
             return true;
         }
@@ -202,7 +247,7 @@ bool autoSelect(const Card* src, int32_t src_len
     } case Type::Type_Triple: {
         std::vector<Card> temp_out;
         temp_out.reserve(hand_len);
-        if (detail::searchAtomic(&classify, src_out[0], 3, &temp_out)) {
+        if (detail::searchAtomic(&classify, src_normalize[0], 3, &temp_out)) {
             std::copy(temp_out.begin(), temp_out.end(), out);
             return true;
         }
@@ -211,25 +256,27 @@ bool autoSelect(const Card* src, int32_t src_len
         std::vector<Card> temp_out;
         temp_out.reserve(hand_len);
         int32_t src_count = src_type.m_type_len;
-        if (detail::searchSeries(&classify, src_out[0], src_out[src_count - 1], 1, &temp_out)) {
+        if (detail::searchSeries(&classify, src_normalize[0], src_normalize[src_count - 1], 1, &temp_out)) {
             std::copy(temp_out.begin(), temp_out.end(), out);
             return true;
         }
         break;
     }
     case Type::Type_Double_Ser: {
-        std::vector<Card> temp_out(hand_len);
+        std::vector<Card> temp_out{};
+        temp_out.reserve(hand_len);
         int32_t src_count = src_type.m_type_len;
-        if (detail::searchSeries(&classify, src_out[0], src_out[2 * (src_count - 1)], 2, &temp_out)) {
+        if (detail::searchSeries(&classify, src_normalize[0], src_normalize[2 * (src_count - 1)], 2, &temp_out)) {
             std::copy(temp_out.begin(), temp_out.end(), out);
             return true;
         }
         break;
     }
     case Type::Type_Triple_Ser: {
-        std::vector<Card> temp_out(hand_len);
+        std::vector<Card> temp_out{};
+        temp_out.reserve(hand_len);
         int32_t src_count = src_type.m_type_len;
-        if (detail::searchSeries(&classify, src_out[0], src_out[3 * (src_count - 1)], 3, &temp_out)) {
+        if (detail::searchSeries(&classify, src_normalize[0], src_normalize[3 * (src_count - 1)], 3, &temp_out)) {
             std::copy(temp_out.begin(), temp_out.end(), out);
             return true;
         }
@@ -238,10 +285,25 @@ bool autoSelect(const Card* src, int32_t src_len
     case Type::Type_31: {
         break;
     }
+    case Type::Type_32: {
+        std::vector<Card> temp_out{};
+        temp_out.reserve(hand_len);
+        if (detail::searchAtomic(&classify, src_normalize[0], 3, &temp_out)) {
+            if (detail::searchAtomic(&classify, Value::Card_Null, 2, &temp_out)) {
+                std::copy(temp_out.begin(), temp_out.end(), out);
+                return true;
+            }
+            detail::SlotClassify classify_ex{};
+            if (!detail::createSlotClassify(src, src_len, &classify_ex))
+                return false;
+            classify = std::move(classify_ex);
+        }
+        break;
+    }
     case Type::Type_Bomb: {
         std::vector<Card> temp_out{};
         temp_out.reserve(hand_len);
-        if (detail::searchBomb(&classify, src_out[0], &temp_out)) {
+        if (detail::searchBomb(&classify, src_normalize[0], &temp_out)) {
             std::copy(temp_out.begin(), temp_out.end(), out);
             return true;
         }
@@ -255,7 +317,7 @@ bool autoSelect(const Card* src, int32_t src_len
         // 选择AAA炸弹，默认不带牌
         std::vector<Card> temp_out{};
         temp_out.reserve(hand_len);
-        if (detail::searchBomb_AAA(&classify, src_out[0], &temp_out)) {
+        if (detail::searchBomb_AAA(&classify, &temp_out)) {
             std::copy(temp_out.begin(), temp_out.end(), out);
             return true;
         }
@@ -265,7 +327,7 @@ bool autoSelect(const Card* src, int32_t src_len
         // 选择炸弹
         std::vector<Card> temp_out{};
         temp_out.reserve(hand_len);
-        if (detail::searchBomb(&classify, src_out[0], &temp_out)) {
+        if (detail::searchBomb(&classify, src_normalize[0], &temp_out)) {
             std::copy(temp_out.begin(), temp_out.end(), out);
             return true;
         }
@@ -278,7 +340,7 @@ CardType parseCardType(const Card* src, int32_t src_len, std::vector<Card>* out)
     // 超过16张牌不能组成合法牌型
     if (src_len > 16)
         return {};
-    out->resize(src_len);
+    out->reserve(src_len);
 
     if (src_len == 1) {
     // 单牌
@@ -290,7 +352,7 @@ CardType parseCardType(const Card* src, int32_t src_len, std::vector<Card>* out)
     // 对子
         if (getCardValue(src[0]) == getCardValue(src[1])) {
             out->push_back(src[0]); out->push_back(src[1]);
-            detail::sortCard(out);
+            std::sort(out->begin(), out->end(), sortDesc_Value_Type());
             return {Type::Type_Double, getCardValue(src[0]), 1};
         }
         return {};
@@ -301,7 +363,7 @@ CardType parseCardType(const Card* src, int32_t src_len, std::vector<Card>* out)
         Value val = getCardValue(src[0]);
         if (val == getCardValue(src[1]) && val == getCardValue(src[2])) {
             out->push_back(src[0]); out->push_back(src[1]); out->push_back(src[2]);
-            detail::sortCard(out);
+            std::sort(out->begin(), out->end(), sortDesc_Value_Type());
             return {Type::Type_Triple, val, 1};
         }
         return {};
@@ -311,14 +373,12 @@ CardType parseCardType(const Card* src, int32_t src_len, std::vector<Card>* out)
     if (!detail::createSlotClassify(src, src_len, &classify)) {
         return {};
     }
-    // 长度最长的牌前面
-    classify.sortByLengthDesc();
 
     if (src_len == 4) {
         // 炸弹
         if (classify.m_total_num_length == 4) {
             out->push_back(src[0]); out->push_back(src[1]); out->push_back(src[2]); out->push_back(src[3]);
-            detail::sortCard(out);
+            std::sort(out->begin(), out->end(), sortDesc_Value_Type());
             return {Type::Type_Bomb, getCardValue(src[0]), 1};
         }
         // AAA + ?
@@ -326,21 +386,26 @@ CardType parseCardType(const Card* src, int32_t src_len, std::vector<Card>* out)
             detail::normalizeTypeList(classify, out);
             return CardType(Type::Type_31, classify.m_slots[0].m_value, 1);
         }
-        return {};
+        //return {};
     }
 
-    std::vector<Card> src_sort(src, src + src_len);
-    detail::sortCard(&src_sort);
-
     // 判断是否单顺,相同牌只有1张,牌值是顺子 9 8 10 J Q K A
-    if (classify.m_sort_result[0].m_total_num == 1 && src_len <= 13 
-        && detail::isSeries(src_sort.data(), src_len)) {
-        detail::normalizeTypeList(classify, out);
-        return CardType(Type::Type_Single_Ser, classify.m_sort_result[0].m_value, src_len);
+    if (classify.m_sort_result.size() > 0
+        && classify.m_sort_result[0].m_total_num == 1 && src_len <= 13) {
+
+        // 判断特殊的 A 2 3 4 5... 或者 2 3 4 5 6...
+        if (detail::isSingleSeries_FromA_Or_2(src, src_len, out)) {
+            return CardType(Type::Type_Single_Ser, getCardValue(out->front()), src_len);
+        }
+        if (detail::isSingleSeries(src, src_len)) {
+            detail::normalizeTypeList(classify, out);
+            return CardType(Type::Type_Single_Ser, classify.m_sort_result[0].m_value, src_len);
+        }
     }
 
     // 判断是否双顺,相同牌有2张，牌值是顺子 JJ QQ KK AA
-    if (classify.m_sort_result[0].m_total_num == 2 && src_len % 2 == 0 
+    if (classify.m_sort_result.size() > 0
+        && classify.m_sort_result[0].m_total_num == 2 && src_len % 2 == 0 
         && detail::isSeries(classify, 2) == classify.m_total_num_length) {
         detail::normalizeTypeList(classify, out);
         return CardType(Type::Type_Double_Ser, classify.m_sort_result[0].m_value
@@ -348,11 +413,22 @@ CardType parseCardType(const Card* src, int32_t src_len, std::vector<Card>* out)
     }
 
     // 判断是否三顺 JJJ QQQ KKK AAA
-    if (classify.m_sort_result[0].m_total_num == 3 && src_len % 3 == 0 
+    if (classify.m_sort_result.size() > 0
+        && classify.m_sort_result[0].m_total_num == 3 && src_len % 3 == 0 
         && detail::isSeries(classify, 3) == classify.m_total_num_length) {
         detail::normalizeTypeList(classify, out);
         return CardType(Type::Type_Triple_Ser, classify.m_sort_result[0].m_value
             , classify.m_total_num_length);
+    }
+
+    //3+2牌型 KKK 33
+    if (src_len == 5 &&
+        classify.m_sort_result.size() >= 2
+        && classify.m_sort_result[0].m_total_num == 3 
+        && classify.m_sort_result[1].m_total_num == 2) {
+        detail::normalizeTypeList(classify, out);
+        return CardType(Type::Type_32, classify.m_sort_result[0].m_value
+            , 3);
     }
 
     // 4+1 炸弹带单张
@@ -367,9 +443,9 @@ CardType parseCardType(const Card* src, int32_t src_len, std::vector<Card>* out)
 
 CardType parseCardType(const Card* src, int32_t len)
 {
-    std::vector<Card> buffer;
-    buffer.reserve(len);
-    return parseCardType(src, len, &buffer);
+    std::vector<Card> buffer{};
+    auto type = parseCardType(src, len, &buffer);
+    return type;
 }
 
 CardType parseCardType(std::vector<Card>* src)
@@ -396,35 +472,6 @@ void removeCardNull(std::vector<Card>* src)
     auto it = std::remove(src->begin(), src->end(), Value::Card_Null);
     src->erase(it, src->end());
 }
-
-/************************************************************************
- * 工具函数                                                                
- ************************************************************************/
-namespace utility {
-
-const CardNumString g_card_num_string[] =
-{
-    {Value::Card_Null,  "?"},
-    {Value::Card_3,     "3"},
-    {Value::Card_4,     "4"},
-    {Value::Card_5,     "5"},
-    {Value::Card_6,     "6"},
-    {Value::Card_7,     "7"},
-    {Value::Card_8,     "8"},
-    {Value::Card_9,     "9"},
-    {Value::Card_10,    "T"},
-    {Value::Card_J,     "J"},
-    {Value::Card_Q,     "Q"},
-    {Value::Card_K,     "K"},
-    {Value::Card_A,     "A"},
-    {Value::Card_2,     "2"},
-    {Value::Card_B,     "B"},
-    {Value::Card_R,     "R"}
-};
-
-} // utility
-
-
 
 namespace detail {
 
@@ -548,48 +595,6 @@ Slot* SlotClassify::getSlotByValue(Value v)
     return &m_slots[delta];
 }
 
-void sortCard(std::vector<Card>* src)
-{
-    std::sort(src->begin(), src->end(), PreGreaterSort());
-}
-
-/*
-int32_t getSameValueSeq(const Card* src, int32_t len, SameSeq* same_seq)
-{
-    if (len <= 0)
-        return 0;
-
-    Card cur_same = 1;
-    Value last_same_val = getCardValue(src[0]);
-    int32_t same_card_cnt = 0;
-    for (int32_t i = 1; i < len; ++i) {
-        if (getCardValue(src[i]) == last_same_val) {
-            ++cur_same;
-        } else {
-            SameSeq& seq = same_seq[same_card_cnt++];
-            seq.m_same_cnt = cur_same;
-            seq.m_value = last_same_val;
-
-            cur_same = 1;
-            last_same_val = getCardValue(src[i]);
-        }
-    }
-    SameSeq& seq = same_seq[same_card_cnt++];
-    seq.m_same_cnt = cur_same;
-    seq.m_value = last_same_val;
-    for (int32_t i = 1; i < same_card_cnt; ++i) {
-        for (int32_t j = 0; j < same_card_cnt - i; ++j) {
-            if ((same_seq[j] & 0xFF00) < (same_seq[j + 1] & 0xFF00) ||
-                ((same_seq[j] & 0xFF00) == (same_seq[j + 1] & 0xFF00) &&
-                (same_seq[j] & 0x0F) > (same_seq[j + 1] & 0x0F))) {
-                std::swap(same_seq[j], same_seq[j + 1]);
-            }
-        }
-    }
-    return same_card_cnt;
-}
-*/
-
 bool createSlotClassify(const Card* src, int32_t len, SlotClassify* classify)
 {
     if (len <= 0)
@@ -606,6 +611,8 @@ bool createSlotClassify(const Card* src, int32_t len, SlotClassify* classify)
         s->m_colors[color_pos]++;
         s->m_total_num++;
     }
+    // 长度最长的牌前面
+    classify->sortByLengthDesc();
     return true;
 }
 
@@ -625,7 +632,7 @@ void normalizeTypeList(const SlotClassify& classify, std::vector<Card>* out)
 }
 
 /// 判断是否顺子
-bool isSeries(const Card* src, int32_t len)
+bool isSingleSeries(const Card* src, int32_t len)
 {
     if (len < 5)
         return false;
@@ -635,6 +642,34 @@ bool isSeries(const Card* src, int32_t len)
         if (card_val < Value::Card_3 || next_val > Value::Card_A || next_val - card_val != 1)
             return false;
     }
+    return true;
+}
+
+bool isSingleSeries_FromA_Or_2(const Card* src, int32_t len, std::vector<Card>* out)
+{
+    if (len < 5)
+        return false;
+
+    // 判断次顺子是不是包含2
+    auto it = std::find_if(src, src + len
+        , [](Card x) 
+        { 
+            Value v = getCardValue(x);
+            return v == Value::Card_2;
+        });
+    if (it == src + len)
+        return false;
+
+    // 包含2，按牌面值排序 A 2 3 4 5 6 7...
+    std::vector<Card> src_bk(src, src + len);
+    std::sort(src_bk.begin(), src_bk.end(), sortAsc_Face());
+    for (size_t i = 1; i < src_bk.size(); ++i) {
+        Face card_face = getCardFace(src_bk[i - 1]);
+        Face next_face = getCardFace(src_bk[i]);
+        if (card_face < Face::Face_A || next_face > Face::Face_K || next_face - card_face != 1)
+            return false;
+    }
+    *out = std::move(src_bk);
     return true;
 }
 
@@ -782,31 +817,6 @@ int32_t searchSeries_CalcLen(Card src_min, Card src_max)
     return 0;
 }
 
-/*
-bool searchSeries_FromA_Or_2(SlotClassify* classify, Card src_min, Card src_max
-    , int32_t src_series_count, std::vector<Card>* out)
-{
-    Value src_min_value = getCardValue(src_min);                    // 目标顺子最小值
-    Value src_max_value = getCardValue(src_max);                    // 目标顺子最大值
-    int32_t src_series_len = src_max_value - src_min_value + 1;     // 目标顺子长度
-
-    // A2345...
-    if (src_min_value == Value::Card_A) {
-        // 先选2开始的顺
-        SlotClassify classifyBk = *classify;
-        std::vector<Card> temp_out{};
-        auto ret = searchSeries_From2(&classifyBk, src_series_len, src_series_count, &temp_out);
-        if (ret) {
-            *classify = std::move(classifyBk);
-            *out = std::move(temp_out);
-            return true;
-        }
-    }
-    // 选择从3开始
-    return searchSeries_From3(classify, Value::Card_3, src_series_len, src_series_count, out);
-}
-*/
-
 // 从3开始选顺
 bool searchSeries_From3(SlotClassify* classify
     , Value src_min_val                     // 从哪张牌开始选。
@@ -824,7 +834,7 @@ bool searchSeries_From3(SlotClassify* classify
             return false;
 
         Slot* slot = classify->getSlotByValue(val);
-        if (slot->m_total_num >= src_len) {
+        if (slot->m_total_num >= src_count) {
             // 找到满足条件的第一张牌, 判断后续的牌数量是否足够
             int32_t need_len = 0;
             for (; need_len < src_len; ++need_len) {
@@ -854,31 +864,38 @@ bool searchSeries_From3(SlotClassify* classify
 // 从2开始选顺长度为src_len的顺
 bool searchSeries_From2(SlotClassify* classify
     , int32_t src_len                   // 长度多少
-    , int32_t src_series_count          // 每种牌选几张
+    , int32_t src_count          // 每种牌选几张
     , std::vector<Card>* out)
 {
+    if (src_len <= 0)
+        return false;
+
     Slot* slot_card_2 = classify->getSlotByValue(Value::Card_2);
-    if (slot_card_2->m_total_num < src_series_count)
+    if (slot_card_2->m_total_num < src_count)
         return false;
 
     // 从3开始找
     int32_t need_len = 0;
-    for (; need_len < src_len - 1; ++need_len) {
-        Slot* slot = classify->getSlotByValue(static_cast<Value>(Value::Card_3 + need_len));
-        if (slot->m_total_num < src_series_count) {
+    for (Value v = Value::Card_3; v <= Value::Card_A; v = static_cast<Value>(v + 1)) {
+        Slot* slot = classify->getSlotByValue(v);
+        if (slot->m_total_num < src_count) {
             // 其中一个牌的数量不够
             break;
+        } else {
+            ++need_len;
         }
+        if (need_len == src_len - 1)
+            break;
     }
 
-    if (need_len == src_len) {
+    if (need_len == src_len - 1) {
         // 牌数量足够,选择2
-        for (int32_t i = 0; i != src_series_count; ++i) {
+        for (int32_t i = 0; i != src_count; ++i) {
             out->push_back(slot_card_2->popOneCard());
         }
         // 选择3开始的顺
         for (Value i = Value::Card_3; i < Value::Card_3 + need_len; i = static_cast<Value>(i + 1)) {
-            int32_t temp = src_series_count;
+            int32_t temp = src_count;
             Slot* s = classify->getSlotByValue(i);
             while (temp--) {
                 out->push_back(s->popOneCard());
@@ -889,7 +906,7 @@ bool searchSeries_From2(SlotClassify* classify
     return false;
 }
 
-bool searchBomb_AAA(SlotClassify* classify, Card src_min, std::vector<Card>* out)
+bool searchBomb_AAA(SlotClassify* classify, std::vector<Card>* out)
 {
     Slot* s = classify->getSlotByValue(Value::Card_A);
     if (s->m_total_num == 3) {
@@ -920,5 +937,159 @@ bool searchBomb(SlotClassify* classify, Card src_min, std::vector<Card>* out)
 }
 
 } // detail
+
+/************************************************************************
+ * 工具函数                                                                
+ ************************************************************************/
+namespace utility {
+
+std::array<CardString, 16> g_card_num_string =
+{ 
+    {
+        {Value::Card_Null,  "?"},
+        {Value::Card_3,     "3"},
+        {Value::Card_4,     "4"},
+        {Value::Card_5,     "5"},
+        {Value::Card_6,     "6"},
+        {Value::Card_7,     "7"},
+        {Value::Card_8,     "8"},
+        {Value::Card_9,     "9"},
+        {Value::Card_10,    "T"},
+        {Value::Card_J,     "J"},
+        {Value::Card_Q,     "Q"},
+        {Value::Card_K,     "K"},
+        {Value::Card_A,     "A"},
+        {Value::Card_2,     "2"},
+        {Value::Card_B,     "B"},
+        {Value::Card_R,     "R"},
+    } 
+};
+
+/*
+const CardNumString g_card_num_string[] =
+{
+    {Value::Card_Null,  "?"},
+    {Value::Card_3,     "3"},
+    {Value::Card_4,     "4"},
+    {Value::Card_5,     "5"},
+    {Value::Card_6,     "6"},
+    {Value::Card_7,     "7"},
+    {Value::Card_8,     "8"},
+    {Value::Card_9,     "9"},
+    {Value::Card_10,    "T"},
+    {Value::Card_J,     "J"},
+    {Value::Card_Q,     "Q"},
+    {Value::Card_K,     "K"},
+    {Value::Card_A,     "A"},
+    {Value::Card_2,     "2"},
+    {Value::Card_B,     "B"},
+    {Value::Card_R,     "R"}
+};
+*/
+
+std::string printCards(const Card* src, int32_t len)
+{
+    std::ostringstream os{};
+    for (int32_t i = 0; i != len; ++i) {
+        os << (int)src[i] << " ";
+    }
+    return os.str();
+}
+
+std::string printCards(const std::vector<Card>& src)
+{
+    std::ostringstream os;
+    for (auto c : src) {
+        os << (int)c << " ";
+    }
+    return os.str();
+}
+
+std::string printCardValue(const std::vector<Card>& src)
+{
+    std::ostringstream os;
+    for (auto c : src) {
+        os << cardValueToString(getCardValue(c)) << " ";
+    }
+    return os.str();
+}
+
+std::string cardTypeToString(Type type)
+{
+    switch (type) {
+    case Type::Type_Signle:         return "Type_Signle";
+    case Type::Type_Single_Ser:     return "Type_Single_Ser";
+    case Type::Type_Double:         return "Type_Double";
+    case Type::Type_Double_Ser:     return "Type_Double_Ser";
+    case Type::Type_Triple:         return "Type_Triple";
+    case Type::Type_Triple_Ser:     return "Type_Triple_Ser";
+    case Type::Type_31:             return "Type_31";
+    case Type::Type_32:             return "Type_32";
+    case Type::Type_Bomb:           return "Type_Bomb";
+    default:
+        break;
+    }
+    return "Type_Null";
+}
+
+std::string cardValueToString(Value value)
+{
+    if (value > Value::Card_R)
+        return g_card_num_string[Value::Card_Null].m_str;
+    return g_card_num_string[value].m_str;
+}
+
+Value stringToCardValue(std::string s)
+{
+    auto it = std::find_if(g_card_num_string.begin(), g_card_num_string.end()
+        , [&](const CardString& slot) { return slot.m_str == s; });
+    if (it != g_card_num_string.end())
+        return it->m_value;
+    return Value::Card_Null;
+}
+
+void selectCards(std::vector<Card>* src, Value value, std::vector<Card>* out, int32_t n)
+{
+    int cnt = 0;
+    for (auto& c : *src) {
+        if (c == 0)
+            continue;
+        if (getCardValue(c) == value) {
+            out->push_back(c);
+            c = 0;
+            if (++cnt == n)
+                return;
+        }
+    }
+}
+
+void paddingCardsCount(std::vector<Card>* src, int32_t n, std::vector<Card>* out)
+{
+    for (auto& c : *src) {
+        if (c == 0)
+            continue;
+        if ((int32_t)out->size() >= n)
+            return;
+        out->push_back(c);
+        c = 0;
+    }
+}
+
+std::vector<Card> pickCardsFromString(std::string s, std::vector<Card>* all_cards)
+{
+    std::vector<Card> out{};
+    std::istringstream istm(s);
+    std::string temp;
+    while (istm >> temp) {
+        Value value = stringToCardValue(temp);
+        //std::cout << card_val << ":" << temp << "\n";
+        if (value != 0) {
+            selectCards(all_cards, value, &out, 1);
+        }
+    }
+    return out;
+}
+
+} // utility
 
 } // gp_alg
