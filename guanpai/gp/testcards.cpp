@@ -13,15 +13,15 @@ void test_autoSelect(std::string str_src, std::string str_hand)
     auto src = utility::pickCardsFromString(str_src, &all_cards);
     auto hand = utility::pickCardsFromString(str_hand, &all_cards);
 
-    std::cout << utility::printCardValue(src) << "\n";
-    std::cout << utility::printCardValue(hand) << "\n";
+    std::cout << utility::cardValueToString(src) << "\n";
+    std::cout << utility::cardValueToString(hand) << "\n";
 
     std::vector<Card> out;
     out.resize(hand.size());
     auto ret = autoSelect(src.data(), (int32_t)src.size(), hand.data(), (int32_t)hand.size(), out.data());
     if (ret) { 
         removeCardNull(&out);
-        std::cout << "success:" << utility::printCardValue(out) << "\n\n";
+        std::cout << "success:" << utility::cardValueToString(out) << "\n\n";
     } else {
         std::cout << "failed:" << __LINE__ << ":" << __FUNCTION__ << "\n\n";
     }
@@ -61,7 +61,7 @@ void testType()
     auto src = utility::pickCardsFromString("2 A 4 3 5 6", &all_cards);
 
     auto card_type = parseCardType(&src);
-    std::cout << strCardType(card_type) << "     " << utility::printCardValue(src) << "\n";
+    std::cout << strCardType(card_type) << "     " << utility::cardValueToString(src) << "\n";
 }
 
 void testShunZi()

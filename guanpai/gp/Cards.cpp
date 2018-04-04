@@ -382,9 +382,9 @@ CardType parseCardType(const Card* src, int32_t src_len, std::vector<Card>* out)
             return {Type::Type_Bomb, getCardValue(src[0]), 1};
         }
         // AAA + ?
-        if (classify.m_total_num_length == 3 && classify.m_slots[0].m_value == Value::Card_A) {
+        if (classify.m_total_num_length == 3 && classify.m_origion_slots[0].m_value == Value::Card_A) {
             detail::normalizeTypeList(classify, out);
-            return CardType(Type::Type_31, classify.m_slots[0].m_value, 1);
+            return CardType(Type::Type_31, classify.m_origion_slots[0].m_value, 1);
         }
         //return {};
     }
@@ -500,14 +500,14 @@ Card Slot::popOneCard()
 }
 
 SlotClassify::SlotClassify()
-    : m_slots()
+    : m_origion_slots()
     , m_sort_result()
     , m_total_num_length()
 {
     int32_t card_3_val = static_cast<int32_t>(Value::Card_3);
     for (int32_t i = 0; i != 15; ++i) {
         Value v = static_cast<Value>(i + card_3_val);
-        m_slots[i].m_value = v;
+        m_origion_slots[i].m_value = v;
     }
 }
 
@@ -517,7 +517,7 @@ SlotClassify::~SlotClassify()
 }
 
 SlotClassify::SlotClassify(const SlotClassify& rhs)
-    : m_slots(rhs.m_slots)
+    : m_origion_slots(rhs.m_origion_slots)
     , m_sort_result(rhs.m_sort_result)
     , m_total_num_length(rhs.m_total_num_length)
 {
@@ -526,7 +526,7 @@ SlotClassify::SlotClassify(const SlotClassify& rhs)
 SlotClassify& SlotClassify::operator=(const SlotClassify& rhs)
 {
     if (this != &rhs) {
-        this->m_slots = rhs.m_slots;
+        this->m_origion_slots = rhs.m_origion_slots;
         this->m_sort_result = rhs.m_sort_result;
         this->m_total_num_length = rhs.m_total_num_length;
     }
@@ -534,7 +534,7 @@ SlotClassify& SlotClassify::operator=(const SlotClassify& rhs)
 }
 
 SlotClassify::SlotClassify(SlotClassify&& rhs)
-    : m_slots(std::move(rhs.m_slots))
+    : m_origion_slots(std::move(rhs.m_origion_slots))
     , m_sort_result(std::move(rhs.m_sort_result))
     , m_total_num_length(std::move(rhs.m_total_num_length))
 {
@@ -543,7 +543,7 @@ SlotClassify::SlotClassify(SlotClassify&& rhs)
 SlotClassify& SlotClassify::operator=(SlotClassify&& rhs)
 {
     if (this != &rhs) {
-        std::swap(m_slots, rhs.m_slots);
+        std::swap(m_origion_slots, rhs.m_origion_slots);
         std::swap(m_sort_result, rhs.m_sort_result);
         std::swap(m_total_num_length, rhs.m_total_num_length);
     }
@@ -553,7 +553,7 @@ SlotClassify& SlotClassify::operator=(SlotClassify&& rhs)
 void SlotClassify::sortByLengthDesc()
 {
     std::vector<Slot> temp{};
-    for (const auto& s : m_slots) {
+    for (const auto& s : m_origion_slots) {
         if (s.m_total_num != 0)
             temp.push_back(s);
     }
@@ -584,7 +584,7 @@ const Slot* SlotClassify::getSlotByValue(Value v) const
     if (!(Value::Card_3 <= v && v <= Value::Card_R))
         return nullptr;
     int32_t delta = v - Value::Card_3;
-    return &m_slots[delta];
+    return &m_origion_slots[delta];
 }
 
 Slot* SlotClassify::getSlotByValue(Value v)
@@ -592,7 +592,7 @@ Slot* SlotClassify::getSlotByValue(Value v)
     if (!(Value::Card_3 <= v && v <= Value::Card_R))
         return nullptr;
     int32_t delta = v - Value::Card_3;
-    return &m_slots[delta];
+    return &m_origion_slots[delta];
 }
 
 bool createSlotClassify(const Card* src, int32_t len, SlotClassify* classify)
@@ -943,7 +943,7 @@ bool searchBomb(SlotClassify* classify, Card src_min, std::vector<Card>* out)
  ************************************************************************/
 namespace utility {
 
-std::array<CardString, 16> g_card_num_string =
+std::array<CardDesc, 16> g_card_desc =
 { 
     {
         {Value::Card_Null,  "?"},
@@ -965,29 +965,7 @@ std::array<CardString, 16> g_card_num_string =
     } 
 };
 
-/*
-const CardNumString g_card_num_string[] =
-{
-    {Value::Card_Null,  "?"},
-    {Value::Card_3,     "3"},
-    {Value::Card_4,     "4"},
-    {Value::Card_5,     "5"},
-    {Value::Card_6,     "6"},
-    {Value::Card_7,     "7"},
-    {Value::Card_8,     "8"},
-    {Value::Card_9,     "9"},
-    {Value::Card_10,    "T"},
-    {Value::Card_J,     "J"},
-    {Value::Card_Q,     "Q"},
-    {Value::Card_K,     "K"},
-    {Value::Card_A,     "A"},
-    {Value::Card_2,     "2"},
-    {Value::Card_B,     "B"},
-    {Value::Card_R,     "R"}
-};
-*/
-
-std::string printCards(const Card* src, int32_t len)
+std::string cardToString(const Card* src, int32_t len)
 {
     std::ostringstream os{};
     for (int32_t i = 0; i != len; ++i) {
@@ -996,7 +974,7 @@ std::string printCards(const Card* src, int32_t len)
     return os.str();
 }
 
-std::string printCards(const std::vector<Card>& src)
+std::string cardToString(const std::vector<Card>& src)
 {
     std::ostringstream os;
     for (auto c : src) {
@@ -1005,7 +983,7 @@ std::string printCards(const std::vector<Card>& src)
     return os.str();
 }
 
-std::string printCardValue(const std::vector<Card>& src)
+std::string cardValueToString(const std::vector<Card>& src)
 {
     std::ostringstream os;
     for (auto c : src) {
@@ -1035,15 +1013,15 @@ std::string cardTypeToString(Type type)
 std::string cardValueToString(Value value)
 {
     if (value > Value::Card_R)
-        return g_card_num_string[Value::Card_Null].m_str;
-    return g_card_num_string[value].m_str;
+        return g_card_desc[Value::Card_Null].m_str;
+    return g_card_desc[value].m_str;
 }
 
-Value stringToCardValue(std::string s)
+Value stringToCardValue(const std::string& s)
 {
-    auto it = std::find_if(g_card_num_string.begin(), g_card_num_string.end()
-        , [&](const CardString& slot) { return slot.m_str == s; });
-    if (it != g_card_num_string.end())
+    auto it = std::find_if(g_card_desc.begin(), g_card_desc.end()
+        , [&](const CardDesc& slot) { return slot.m_str == s; });
+    if (it != g_card_desc.end())
         return it->m_value;
     return Value::Card_Null;
 }
@@ -1075,7 +1053,7 @@ void paddingCardsCount(std::vector<Card>* src, int32_t n, std::vector<Card>* out
     }
 }
 
-std::vector<Card> pickCardsFromString(std::string s, std::vector<Card>* all_cards)
+std::vector<Card> pickCardsFromString(const std::string& s, std::vector<Card>* all_cards)
 {
     std::vector<Card> out{};
     std::istringstream istm(s);

@@ -52,17 +52,16 @@ enum Value
 /// 牌型
 enum class Type 
 {
-    Type_Null          = 0x00,	//未定义
-    Type_Signle        = 0x01,	//单牌
-    Type_Single_Ser    = 0x02,	//顺子
-    Type_Double        = 0x03,	//对子
-    Type_Double_Ser    = 0x04,	//连对
-    Type_Triple        = 0x05,	//三个
-    Type_Triple_Ser    = 0x06,	//三顺(飞机)
-    Type_31            = 0x07,	//3带1单 AAA + ?
-    Type_32            = 0x08,	//3带1对
-    Type_Bomb          = 0x09,	//炸弹
-    //Type_Mask          = 0x10,	//牌型掩码
+    Type_Null          = 0,	    // 未定义
+    Type_Signle        = 1,	    // 单牌
+    Type_Single_Ser    = 2,	    // 顺子
+    Type_Double        = 3,	    // 对子
+    Type_Double_Ser    = 4,	    // 连对
+    Type_Triple        = 5,	    // 三个
+    Type_Triple_Ser    = 6,	    // 三顺(飞机)
+    Type_31            = 7,	    // 3带1单 AAA + ?
+    Type_32            = 8,	    // 3带1对
+    Type_Bomb          = 9,	    // 炸弹
 };
 
 /// 牌面值
@@ -92,8 +91,6 @@ enum { QUANTITY = 54 };
 
 using Card = int32_t;
 
-using CardPosition = std::list<Card>;    //牌所在的位置, size()最大为4
-
 struct CardType
 {
     CardType();
@@ -116,7 +113,7 @@ struct CardType
     // A K J Q 10 7 8 9,规则化后AKQJ10987 这牌值是7
     Value       m_value;
 
-    // 牌型长度(如果该牌型有长度)
+    // 牌型长度
     int32_t     m_type_len;
 };
 
@@ -235,7 +232,7 @@ struct SlotClassify
     SlotClassify(SlotClassify&& rhs);
     SlotClassify& operator=(SlotClassify&& rhs);
 
-    std::array<Slot, 15> m_slots;               // 总共15种牌
+    std::array<Slot, 15> m_origion_slots;               // 总共15种牌
 
     Slot* getSlotByValue(Value v);
     const Slot* getSlotByValue(Value v) const;
@@ -246,10 +243,6 @@ struct SlotClassify
     std::vector<Slot>    m_sort_result;         // 牌最多的排前面
     int32_t              m_total_num_length;    // 牌长度相同的有几张
 };
-
-//void sortCard(std::vector<Card>* src);
-
-//int32_t getSameValueSeq(const Card* src, int32_t len, SameSeq* same_seq, bool need_sort);
 
 bool createSlotClassify(const Card* src, int32_t len, SlotClassify* classify);
 
@@ -296,22 +289,21 @@ bool searchBomb(SlotClassify* classify, Card src_min, std::vector<Card>* out);
  ************************************************************************/
 namespace utility {
 
-struct CardString
+struct CardDesc
 {
     Value       m_value;
     std::string m_str;
 };
 
-
-std::string printCards(const Card* src, int32_t len);
-std::string printCards(const std::vector<Card>& src);
-std::string printCardValue(const std::vector<Card>& src);
-std::string cardTypeToString(Type type);
+std::string cardToString(const Card* src, int32_t len);
+std::string cardToString(const std::vector<Card>& src);
 std::string cardValueToString(Value value);
-Value stringToCardValue(std::string s);
+std::string cardValueToString(const std::vector<Card>& src);
+std::string cardTypeToString(Type type);
+Value stringToCardValue(const std::string& s);
 void selectCards(std::vector<Card>* src, Value value, std::vector<Card>* out, int32_t n);
 void paddingCardsCount(std::vector<Card>* src, int32_t n, std::vector<Card>* out);
-std::vector<Card> pickCardsFromString(std::string s, std::vector<Card>* all_cards);
+std::vector<Card> pickCardsFromString(const std::string& s, std::vector<Card>* all_cards);
 
 
 } // utility
