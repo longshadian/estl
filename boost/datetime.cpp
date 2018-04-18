@@ -3,6 +3,7 @@
 #include <string>
 #include <iostream>
 #include <chrono>
+#include <thread>
 #include <sys/time.h>
 
 #include <boost/date_time/date.hpp>
@@ -102,6 +103,18 @@ int main()
         std::cout << "now: " << tnow 
             << " now_ex: " << tend 
             << " delta: " << tend - tnow
+            << "\n";
+    }
+
+    {
+        auto tnow = boost::posix_time::microsec_clock::universal_time();
+        std::this_thread::sleep_for(std::chrono::seconds{100});
+        auto tnow2 = boost::posix_time::microsec_clock::universal_time();
+        boost::posix_time::time_duration td = tnow2 - tnow;
+        std::cout << td.total_seconds() 
+            << " " << td.total_milliseconds()
+            << " " << td.total_microseconds()
+            << " " << td.seconds()
             << "\n";
     }
 
