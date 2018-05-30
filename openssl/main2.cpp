@@ -3,6 +3,8 @@
 #include <vector>
 #include <array>
 #include <sstream>
+#include <chrono>
+#include <thread>
 
 #include <openssl/rsa.h>
 #include <openssl/err.h>
@@ -94,7 +96,78 @@ bool aesEncode()
     }
 }
 
+
+bool aesEncodeEx()
+{
+    size_t data_len = 1024 * 10;
+    std::vector<uint8_t> data{};
+    data.resize(data_len, 0x99);
+    padding16(&data);
+
+    std::vector<uint8_t> data_encrypt{};
+    data_encrypt.resize(data.size());
+
+    std::vector<uint8_t> data_bk{};
+    data_bk.resize(data_encrypt.size());
+
+    std::array<uint8_t, 32> key{};
+    key.fill(0x81);
+    AES_KEY aesKey{};
+    int ret = 0;
+    ret = AES_set_encrypt_key(key.data(), key.size() * 8, &aesKey);
+    if (ret != 0) {
+        std::cout << __LINE__ << ":ERROR: ret: " << ret << "\n";
+        return false;
+    }
+
+    AES_KEY aesKey2{};
+    ret = AES_set_decrypt_key(key.data(), key.size() * 8, &aesKey2);
+    if (ret != 0) {
+        std::cout << __LINE__ << ":ERROR: ret: " << ret << "\n";
+        return false;
+    }
+
+    {
+        const int count = 100000;
+        int cnt = 0;
+        auto tbegin = std::chrono::system_clock::now();
+        while (cnt++ < count) {
+            for (size_t i = 0; i != data.size() / 16; ++i) {
+                auto* pos_in = data.data() + 16 * i;
+                auto* pos_out = data_encrypt.data() + 16 * i;
+                AES_ecb_encrypt(pos_in, pos_out, &aesKey, AES_ENCRYPT);
+            }
+
+            for (size_t i = 0; i != data.size() / 16; ++i) {
+                auto* pos_in = data_encrypt.data() + 16 * i;
+                auto* pos_out = data_bk.data() + 16 * i;
+                AES_ecb_encrypt(pos_in, pos_out, &aesKey2, AES_DECRYPT);
+            }
+        }
+
+        auto tend = std::chrono::system_clock::now();
+
+        std::cout << "data_len: " << data_len
+            << " cnt: " << count
+            << "  cost:" << std::chrono::duration_cast<std::chrono::milliseconds>(tend - tbegin).count() 
+            << "ms"
+            << std::endl;
+    }
+
+    return true;
+    {
+        auto s = toHexString(data_encrypt);
+        printf("data_e:\t\t%s\n", s.c_str());
+    }
+
+    {
+        auto s = toHexString(data_bk);
+        printf("data_o:\t\t%s\n", s.c_str());
+    }
+}
+
+
 int main()
 {
-    aesEncode();
+    aesEncodeEx();
 }
