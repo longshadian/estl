@@ -19,19 +19,19 @@ public:
     TcpServerEvent& operator=(TcpServerEvent&& rhs) = delete;
 
     // 新的handler创建了
-    virtual void OnAccept(TcpHdl hdl);
+    virtual void OnAccept(TcpHdl hdl) = 0;
 
     // handler关闭
-    virtual void OnClosed(TcpHdl hdl);
+    virtual void OnClosed(TcpHdl hdl) = 0;
 
     // handler超时
-    virtual void OnTimeout(TcpHdl hdl);
+    virtual void OnTimeout(TcpHdl hdl) = 0;
 
     // server可以得accept的handler超出上限
-    virtual void OnAcceptOverflow();
+    virtual void OnAcceptOverflow() = 0;
 
-    virtual void OnCatchException(const std::exception& e);
+    virtual void OnCatchException(const std::exception& e) = 0;
 
-    virtual void OnDecode(TcpHdl hdl, ByteBuffer& buffer);
+    virtual void OnDecode(TcpHdl hdl, ByteBuffer& buffer) = 0;
 };
 

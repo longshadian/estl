@@ -42,7 +42,7 @@ public:
 
 private:
     void                            Run();
-    void                            StopHandler(const std::shared_ptr<TcpHandler>& handler);
+    void                            StopHandler(int64_t conn_id);
     void                            StopAccept();
     void                            StopAllHandler();
     void                            DoAccept();
@@ -55,7 +55,7 @@ private:
     std::unique_ptr<boost::asio::io_service::work>  m_work;
     boost::asio::ip::tcp::acceptor                  m_acceptor;
     boost::asio::ip::tcp::socket                    m_socket;
-    std::unordered_set<std::shared_ptr<TcpHandler>> m_handlers;
+    std::unordered_map<int64_t, std::shared_ptr<TcpHandler>> m_handlers;
     Option                                          m_option;
     std::unique_ptr<TcpServerEvent>                 m_event;
     std::atomic<int64_t>                            m_handler_index;

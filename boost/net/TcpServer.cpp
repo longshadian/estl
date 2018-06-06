@@ -1,7 +1,7 @@
 #include "TcpServer.h"
 
 #include "TcpHandler.h"
-#include "Message.h"
+#include "TcpEvent.h"
 
 TcpServer::TcpServer(uint16_t port, std::unique_ptr<TcpServerEvent> evt, Option option)
     : m_is_running()
@@ -46,7 +46,6 @@ void TcpServer::Stop()
 
 void TcpServer::WaitThreadExit()
 {
-    Stop();
     if (m_thread.joinable())
         m_thread.join();
 }
@@ -94,8 +93,13 @@ std::shared_ptr<TcpHandler> TcpServer::CreateHandler()
         m_event->OnAcceptOverflow();
         return nullptr;
     }
-    auto handler = std::make_shared<TcpHandler>(std::move(m_socket), *this, ++m_handler_index);
-    m_handlers.insert(handler);
+
+    auto f = std::bind(&TcpServer::StopHandler, this, std::placeholders::_1);
+    auto handler = std::make_shared<TcpHandler>(std::move(m_socket), *this, ++m_handler_index
+        , std::move(f));
+        //, std::bind(&TcpServer::StopHandler, this, std::placeholders::_1));
+    handler->Init();
+    m_handlers.insert({handler->GetConnID(), handler});
     return handler;
 }
 
@@ -106,13 +110,14 @@ void TcpServer::Run()
             m_io_context.run();
         } catch (const std::exception& e) {
             m_event->OnCatchException(e);
+            m_io_context.restart();
         }
     }
 }
 
-void TcpServer::StopHandler(const std::shared_ptr<TcpHandler>& handler)
+void TcpServer::StopHandler(int64_t conn_id)
 {
-    m_handlers.erase(handler);
+    m_handlers.erase(conn_id);
 }
 
 boost::asio::io_context& TcpServer::GetIOContext()

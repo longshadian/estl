@@ -4,6 +4,7 @@
 #include <functional>
 #include <iostream>
 #include <list>
+#include <memory>
 
 #include <boost/asio.hpp>
 
@@ -27,12 +28,15 @@ public:
     };
 
 public:
-    TcpHandler(boost::asio::ip::tcp::socket socket, TcpServer& server, int64_t conn_id);
+    TcpHandler(boost::asio::ip::tcp::socket socket, TcpServer& server, int64_t conn_id
+        , std::function<void(int64_t)> cb);
     ~TcpHandler();
     TcpHandler(const TcpHandler&) = delete;
     TcpHandler& operator=(const TcpHandler&) = delete;
     TcpHandler(TcpHandler&&) = delete;
     TcpHandler& operator=(TcpHandler&&) = delete;
+
+    void                            Init();
 
     void                            Send(std::shared_ptr<ByteBuffer> buffer);
     boost::asio::ip::tcp::socket&   GetSocket();
@@ -59,5 +63,5 @@ private:
     std::array<uint8_t, 1024>               m_read_fix_buffer;
     ByteBuffer                              m_read_total_buffer;
     std::list<std::shared_ptr<ByteBuffer>>  m_write_buffer;
-    std::function<void(std::shared_ptr<TcpHandler>)> m_server_cb;
+    std::function<void(int64_t)>            m_server_cb;
 };

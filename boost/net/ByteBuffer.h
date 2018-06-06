@@ -26,10 +26,13 @@ public:
     size_t                  ReaderIndex() const;
     size_t                  ReadableSize() const;
     const void*             GetReaderPtr() const;
+    const void*             GetReaderPtr(size_t pos) const;
     void                    ReaderPickup(size_t len);
+    size_t                  ReadeArray(void* p, size_t len);
 
     size_t                  WriterIndex() const;
     size_t                  WritableSize() const;
+
 
 private:
     std::vector<uint8_t>    m_storage;

@@ -1,6 +1,7 @@
 #include "ByteBuffer.h"
 
 #include <cstring>
+#include <algorithm>
 
 BinaryByteBuffer::BinaryByteBuffer()
     : m_storage()
@@ -19,14 +20,14 @@ BinaryByteBuffer::BinaryByteBuffer(std::vector<uint8_t> data)
 BinaryByteBuffer::BinaryByteBuffer(const std::string& data)
     : m_storage(data.begin(), data.end())
     , m_rpos()
-    , m_wpos()
+    , m_wpos(data.size())
 {
 }
 
 BinaryByteBuffer::BinaryByteBuffer(const void* data, size_t len)
     : m_storage(reinterpret_cast<const uint8_t*>(data), reinterpret_cast<const uint8_t*>(data) + len)
     , m_rpos()
-    , m_wpos()
+    , m_wpos(len)
 {
 }
 
@@ -73,12 +74,14 @@ void BinaryByteBuffer::MemoryMove()
     if (len == 0) {
         m_rpos = 0;
         m_wpos = 0;
+        m_storage.clear();
         return;
     }
 
     std::memmove(m_storage.data(), &m_storage[m_rpos], len);
     m_rpos = 0;
-    m_wpos = 0;
+    m_wpos = len;
+    m_storage.resize(len);
 }
 
 size_t BinaryByteBuffer::ReaderIndex() const
@@ -96,9 +99,22 @@ const void* BinaryByteBuffer::GetReaderPtr() const
     return &m_storage[m_rpos];
 }
 
+const void* BinaryByteBuffer::GetReaderPtr(size_t pos) const
+{
+    return &m_storage[m_rpos + pos];
+}
+
 void BinaryByteBuffer::ReaderPickup(size_t len)
 {
     m_rpos += len;
+}
+
+size_t BinaryByteBuffer::ReadeArray(void* p, size_t len)
+{
+    size_t n = std::min(len, ReadableSize());
+    std::memcpy(p, GetReaderPtr(), n);
+    ReaderPickup(n);
+    return n;
 }
 
 size_t BinaryByteBuffer::WriterIndex() const

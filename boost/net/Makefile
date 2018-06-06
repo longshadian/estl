@@ -5,7 +5,7 @@ LIB	= -L/usr/local/lib/ -lboost_system -lpthread
 		
 CC      = g++
 ##CFLAGS  = -g -Wall -Wshadow -Wunreachable-code  -Wextra -Wconversion -Wl,--no-as-needed -Werror -std=c++11 
-CFLAGS  = -g -Wall -Werror -std=c++14
+CFLAGS  = -g -Wall -Werror -Wextra -std=c++14
 LDFLAGS = -Wl,--no-as-needed -Wl,-rpath /usr/local/lib/
 
 .SUFFIXES:  .o .cpp .cc

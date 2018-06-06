@@ -4,21 +4,28 @@
 #include <boost/date_time/posix_time/posix_time.hpp>
 
 #include "TcpServer.h"
-#include "Message.h"
+#include "TcpEvent.h"
 
-TcpHandler::TcpHandler(boost::asio::ip::tcp::socket socket, TcpServer& server, int64_t conn_id)
+TcpHandler::TcpHandler(boost::asio::ip::tcp::socket socket, TcpServer& server, int64_t conn_id
+    , std::function<void(int64_t)> cb)
     : m_tcp_server(server)
     , m_socket(std::move(socket))
     , m_is_closed(false)
     , m_conn_id(conn_id)
+    , m_read_fix_buffer()
+    , m_read_total_buffer()
     , m_write_buffer()
-    , m_server_cb()
+    , m_server_cb(std::move(cb))
 {
-    DoRead();
 }
 
 TcpHandler::~TcpHandler()
 {
+}
+
+void TcpHandler::Init()
+{
+    DoRead();
 }
 
 void TcpHandler::Send(std::shared_ptr<ByteBuffer> buffer)
@@ -94,8 +101,7 @@ void TcpHandler::DoClosed(CLOSED_TYPE type)
     boost::system::error_code ec;
     m_socket.shutdown(boost::asio::ip::tcp::socket::shutdown_both, ec);
     m_socket.close(ec);
-    m_server_cb(shared_from_this());
-    //m_tcp_server.StopHandler(shared_from_this());
+    m_server_cb(GetConnID());
 }
 
 void TcpHandler::Shutdown()
@@ -151,5 +157,6 @@ size_t TcpHandler::GetTimeoutTime() const
 bool TcpHandler::Decode()
 {
     m_tcp_server.GetEvent().OnDecode(GetHdl(), m_read_total_buffer);
+    m_read_total_buffer.MemoryMove();
     return true;
 }
