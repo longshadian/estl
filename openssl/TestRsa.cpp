@@ -69,6 +69,7 @@ std::string toString(const std::vector<uint8_t>& buf)
 int main()
 {
     std::string str = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+    str.resize(128, 'a');
 
     std::vector<uint8_t> out{};
     encrypt(toBinary(str), &out);
@@ -76,7 +77,10 @@ int main()
     std::vector<uint8_t> out2{};
     decrypt(out, &out2);
 
-    std::cout << out.size() << "  " << out2.size() << "\n";
+    std::cout << "str_size: " << str.size()
+        << " after_encrypt_size: " << out.size()
+        << " after_decrypt_size: " << out2.size()
+        << "\n";
 
     auto str_ex = toString(out2);
     std::cout << (str == str_ex) << "\n";
