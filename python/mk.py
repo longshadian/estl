@@ -6,16 +6,24 @@ import sys
 import time
 
 
-SRC = "./b.out"
+SRC = "./bin/ddzserver2"
 
 
 def main(args):
-    cmd_list = {"start": start, "stop": stop, "restart": restart}
+    cmd_list = {
+        "start": start,
+        "stop": stop,
+        "restart": restart,
+        "--sr": server_cmd,
+        "--cr": server_cmd,
+    }
     usage = '''
 Usage: ./mk.py [options]
-                start
-                stop
-                restart
+        start               启动服务        如果服务已经运行，会提示无法启动"
+        stop                停止服务        如果该服务没有运行，不会有提示"
+        restart             先停止服务,后启动服务"
+        --sr                保存redis缓存中所有需要保存的玩家数据,需要先stop服务"
+        --cr                删除redis缓存中所有已经保存的玩家数据,需要先stop服务"
 '''
 
     if len(args) == 1:
@@ -82,6 +90,20 @@ def stop():
             return
         print("waiting {0} stop pid:{1}".format(SRC, pid))
 
+def server_cmd():
+    pid = get_pid()
+    if pid:
+        print("{0} is running! pid:{1}".format(SRC, pid))
+        return
+    cmd = SRC
+    for i in range(0, len(sys.argv)):
+        if i == 0:
+            continue
+        cmd += " "
+        cmd += sys.argv[i]
+    #print(cmd)
+    subprocess.Popen([cmd], shell=True, universal_newlines=True)
 
 if __name__ == '__main__':
     main(sys.argv)
+    #print(s)

@@ -78,6 +78,11 @@ def main(path):
         select_card(row)
 
 if __name__ == '__main__':
+<<<<<<< HEAD
     #main(r'Y:\ddzgame\src2\tools\card_import\6.csv')
     main(r'/home/cgy/work/ddzgame/src2/tools/card_import/0.csv')
+=======
+    #main(r'Y:\ddzgame\src2\tools\card_import\6.csv')
+    main(r'/home/cgy/work/ddzgame/src2/tools/card_import/0.csv')
+>>>>>>> 555bdac81e27e7244b3d29153f9a3ab67b08c357
     

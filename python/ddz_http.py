@@ -11,6 +11,10 @@ PORT = 21005
 DESC="""
 add_coin        [userid] [count]
 add_ticket      [userid] [count]
+<<<<<<< HEAD
+=======
+add_jpq         [userid] [count]
+>>>>>>> 555bdac81e27e7244b3d29153f9a3ab67b08c357
 charge          [userid] [shopid]
 account_lock    [userid]
 account_unlock  [userid]
@@ -135,6 +139,11 @@ def main():
         change_item(int(sys.argv[2]), 510001, int(sys.argv[3]))
     elif cmd_name == "add_ticket" and len(sys.argv) == 4:
         change_item(int(sys.argv[2]), 530001, int(sys.argv[3]))
+<<<<<<< HEAD
+=======
+    elif cmd_name == "add_jpq" and len(sys.argv) == 4:
+        change_item(int(sys.argv[2]), 700001, int(sys.argv[3]))
+>>>>>>> 555bdac81e27e7244b3d29153f9a3ab67b08c357
     elif cmd_name == "charge" and len(sys.argv) == 4:
         charge(int(sys.argv[2]), int(sys.argv[3]))
     elif cmd_name == "account_unlock" and len(sys.argv) == 3:
