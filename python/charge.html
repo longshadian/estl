@@ -1,0 +1,71 @@
+
+
+<title>森林酒吧推一推</title>
+<head>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8"> 
+        <script
+			  src="https://code.jquery.com/jquery-3.3.1.min.js"
+			  integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8="
+			  crossorigin="anonymous"></script>
+        <script type="text/javascript">
+            /*<![CDATA[*/
+
+            var prodKey = "3c98669d5dc14f5382970b97c38e3040"
+            var prodUrl = "https://xyx.17tcw.com/tyt/web"
+
+            var devKey = "b74ab64bbb1a4748827162dfb5f85a05"
+            var devUrl = "http://192.168.0.251:10300/tyt/web"
+
+            //var key = devKey
+            //var url = devUrl
+            var key = prodKey
+            var url = prodUrl
+
+            function changeCoin() {
+                var userId = parseInt($("#charge_userid").val());
+                if (!userId) {
+                    alert("userId is null");
+                    return;
+                }
+
+                var coins = parseInt($("#charge_coins").val());
+                if (!coins) {
+                    alert("coins is null");
+                    return;
+                }
+
+                var content = new Object();
+                content.userId = userId;
+                content.key = key;
+                content.coins = coins;
+
+                var str = JSON.stringify(content)
+                console.log("xxxx  ",str)
+
+                $.ajax({
+                        url: url + "/change_coin",
+                        method: "POST",                        
+                        data: JSON.stringify(content),
+                        contentType: "application/json",  
+                        dataType: "json",  
+                        success: function( result ) {
+                            alert(JSON.stringify(result));                            
+                        }
+                });                    
+            }
+
+            /*]]>*/
+        </script>
+
+</head>
+
+<body>
+    <p>
+            <div>
+                <p>森林酒吧推一推充值：</p>
+                    <p>userId: <input id="charge_userid" type="text"/>不能小于等于0</p>
+                    <p>金币: <input id="charge_coins" type="text"/> 不能为0，负数就是扣除金币!!</p>
+                    <input type="button" value="充值" onclick="changeCoin()"/>
+            </div>
+    </p>
+</body>
