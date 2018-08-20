@@ -1,0 +1,47 @@
+
+find_path(BOOST_INCLUDE_DIR asio.hpp
+    PATH_SUFFIXES boost
+    PATHS
+    /usr/include
+    /usr/local/include
+)
+
+IF(WIN32)
+
+    message(STATUS "CMAKE_VS_DEVENV_COMMAND: ${CMAKE_VS_DEVENV_COMMAND}")
+    message(STATUS "CMAKE_VS_INTEL_Fortran_PROJECT_VERSION: ${CMAKE_VS_INTEL_Fortran_PROJECT_VERSION}")
+    message(STATUS "CMAKE_VS_MSBUILD_COMMAND: ${CMAKE_VS_MSBUILD_COMMAND}")
+    message(STATUS "CMAKE_VS_NsightTegra_VERSION: ${CMAKE_VS_NsightTegra_VERSION}")
+    message(STATUS "CMAKE_VS_PLATFORM_NAME: ${CMAKE_VS_PLATFORM_NAME}")
+    message(STATUS "CMAKE_VS_PLATFORM_TOOLSET: ${CMAKE_VS_PLATFORM_TOOLSET}")
+    message(STATUS "CMAKE_VS_PLATFORM_TOOLSET_CUDA: ${CMAKE_VS_PLATFORM_TOOLSET_CUDA}")
+    message(STATUS "CMAKE_VS_PLATFORM_TOOLSET_HOST_ARCHITECTURE: ${CMAKE_VS_PLATFORM_TOOLSET_HOST_ARCHITECTURE}")
+    message(STATUS "CMAKE_VS_PLATFORM_TOOLSET_VERSION: ${CMAKE_VS_PLATFORM_TOOLSET_VERSION}")
+    message(STATUS "CMAKE_VS_WINDOWS_TARGET_PLATFORM_VERSION: ${CMAKE_VS_WINDOWS_TARGET_PLATFORM_VERSION}")
+
+    find_library(BOOST_LIBRARY
+      NAMES boost_system-vc140-mt-gd
+      HINTS
+        ENV LUA_DIR
+      PATH_SUFFIXES lib
+      PATHS
+      /usr/lib
+      /usr/local/lib
+      "E:\\gitpro\\vcpkg\\installed\\x86-windows\\debug\\lib"
+    )
+ENDIF()
+
+set(FIND_BOOST "xxxxx" CACHE STRING "find boost")
+
+if(BOOST_LIBRARY)
+    message(STATUS "find BOOST_LIBRARY ${BOOST_LIBRARY}")
+  # include the math library for Unix
+  FIND_LIBRARY(LIB_BOOST_SYSTEM boost_system-vc140-mt-gd)
+  if(UNIX AND NOT APPLE AND NOT BEOS)
+    set(BOOST_LIBRARIES "${LIB_BOOST_SYSTEM};${LUA_MATH_LIBRARY}" CACHE STRING "boost libraries")
+  else()
+    set(BOOST_LIBRARIES "${LIB_BOOST_SYSTEM}" CACHE STRING "boost libraries")
+  endif()
+endif()
+
+

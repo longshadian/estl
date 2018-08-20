@@ -11,10 +11,7 @@ PORT = 21005
 DESC="""
 add_coin        [userid] [count]
 add_ticket      [userid] [count]
-<<<<<<< HEAD
-=======
 add_jpq         [userid] [count]
->>>>>>> 555bdac81e27e7244b3d29153f9a3ab67b08c357
 charge          [userid] [shopid]
 account_lock    [userid]
 account_unlock  [userid]

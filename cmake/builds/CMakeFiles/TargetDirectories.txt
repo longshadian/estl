@@ -1,1 +1,0 @@
-/home/cgy/work/test/cmake/builds/CMakeFiles/ddzgame.dir

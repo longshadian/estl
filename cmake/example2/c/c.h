@@ -1,0 +1,3 @@
+#pragma
+
+void a();
