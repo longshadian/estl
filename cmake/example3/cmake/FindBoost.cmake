@@ -1,0 +1,61 @@
+
+IF(WIN32)
+    FIND_PATH(BOOST_INCLUDE_DIR boost/asio.hpp
+        PATHS
+        E:\\gitpro\\vcpkg\\installed\\x86-windows\\include
+    )
+ELSEIF(UNIX)
+    FIND_PATH(BOOST_INCLUDE_DIR boost/asio.hpp
+        PATHS
+        /usr/lib
+        /usr/local/lib
+    )
+ENDIF(WIN32)
+
+IF(NOT BOOST_INCLUDE_DIR)
+    MESSAGE(FATAL_ERROR "Can't find BOOST_INCLUDE_DIR: ${BOOST_INCLUDE_DIR}")
+  ELSE()
+    MESSAGE("Set BOOST_INCLUDE_DIR: ${BOOST_INCLUDE_DIR}")
+ENDIF()
+
+
+IF(WIN32)
+    FIND_PATH(BOOST_LIBRARY_DIR boost_system-vc140-mt-gd.lib
+        PATHS
+        E:\\gitpro\\vcpkg\\installed\\x86-windows\\debug\\lib
+    )
+ELSEIF(UNIX)
+    FIND_PATH(BOOST_LIBRARY_DIR libboost_system.so
+        PATHS
+        /usr/lib
+        /usr/local/lib
+    )
+ENDIF(WIN32)
+
+IF(NOT BOOST_LIBRARY_DIR)
+    MESSAGE(FATAL_ERROR "Can't find BOOST_LIBRARY_DIR: ${BOOST_LIBRARY_DIR}")
+  ELSE()
+    MESSAGE("Set BOOST_LIBRARY_DIR: ${BOOST_LIBRARY_DIR}")
+ENDIF()
+
+IF(WIN32)
+    FIND_LIBRARY(LIB_BOOST_LOG boost_log-vc140-mt-gd.lib PATHS ${BOOST_LIBRARY_DIR})
+    FIND_LIBRARY(LIB_BOOST_SYSTEM boost_system-vc140-mt-gd.lib PATHS ${BOOST_LIBRARY_DIR})
+    #FIND_LIBRARY(LIB_BOOST_LOG boost_log.lib PATHS ${BOOST_LIBRARY_DIR})
+    #FIND_LIBRARY(LIB_BOOST_SYSTEM boost_system.lib PATHS ${BOOST_LIBRARY_DIR})
+ELSEIF(UNIX)
+    FIND_LIBRARY(LIB_BOOST_LOG libboost_log.so PATHS ${BOOST_LIBRARY_DIR})
+    FIND_LIBRARY(LIB_BOOST_SYSTEM libboost_system.so PATHS ${BOOST_LIBRARY_DIR})
+ENDIF(WIN32)
+
+IF(NOT LIB_BOOST_LOG)
+    MESSAGE(FATAL_ERROR "Can't find LIB_BOOST_LOG")
+ENDIF()
+
+IF(NOT LIB_BOOST_SYSTEM)
+    MESSAGE(FATAL_ERROR "Can't find LIB_BOOST_SYSTEM")
+ENDIF()
+
+SET(BOOST_LIBRARIES ${LIB_BOOST_SYSTEM} ${LIB_BOOST_LOG} CACHE STRING "boost libraries")
+
+#MESSAGE("BOOST_LIBRARIES ${BOOST_LIBRARIES}")
