@@ -1,0 +1,36 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="src">
+      <UniqueIdentifier>{62d696c2-4bd0-43c5-9a8f-1caaacd7b341}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="src\Main.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Token.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Lexer.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\File.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="src\Token.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Lexer.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="src\File.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Log.h">
+      <Filter>src</Filter>
+    </ClInclude>
+  </ItemGroup>
+</Project>
