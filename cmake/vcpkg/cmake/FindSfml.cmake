@@ -1,0 +1,89 @@
+
+IF(WIN32)
+    FIND_PATH(SFML_INCLUDE_DIR SFML/Graphics.hpp
+        PATHS
+        E:\\gitpro\\vcpkg\\installed\\x86-windows\\include
+        
+        NO_DEFAULT_PATH
+    )
+ELSEIF(UNIX)
+    FIND_PATH(SFML_INCLUDE_DIR SFML/Graphics.hpp
+        PATHS
+        /usr/include
+        /usr/local/include
+        
+        NO_DEFAULT_PATH
+    )
+ENDIF(WIN32)
+
+IF(NOT SFML_INCLUDE_DIR)
+    MESSAGE(FATAL_ERROR "Can't find SFML_INCLUDE_DIR: ${SFML_INCLUDE_DIR}")
+  ELSE()
+    MESSAGE("Set SFML_INCLUDE_DIR: ${SFML_INCLUDE_DIR}")
+ENDIF()
+
+
+IF(WIN32)
+    FIND_PATH(SFML_LIBRARY_DIR sfml-graphics-d.lib
+        PATHS
+        E:\\gitpro\\vcpkg\\installed\\x86-windows\\debug\\lib
+        
+        NO_DEFAULT_PATH
+    )
+ELSEIF(UNIX)
+    FIND_PATH(SFML_LIBRARY_DIR sfml-graphics.so
+        PATHS
+        /usr/lib
+        /usr/local/lib
+        
+        NO_DEFAULT_PATH
+    )
+ENDIF(WIN32)
+
+IF(NOT SFML_LIBRARY_DIR)
+    MESSAGE(FATAL_ERROR "Can't find SFML_LIBRARY_DIR: ${SFML_LIBRARY_DIR}")
+  ELSE()
+    MESSAGE("Set SFML_LIBRARY_DIR: ${SFML_LIBRARY_DIR}")
+ENDIF()
+
+IF(WIN32)
+    FIND_LIBRARY(LIB_SFML_AUDIO sfml-audio-d.lib PATHS ${SFML_LIBRARY_DIR})
+    FIND_LIBRARY(LIB_SFML_GRAPHICS sfml-graphics-d.lib PATHS ${SFML_LIBRARY_DIR})
+    FIND_LIBRARY(LIB_SFML_NETWORK sfml-network-d.lib PATHS ${SFML_LIBRARY_DIR})
+    FIND_LIBRARY(LIB_SFML_SYSTEM sfml-system-d.lib PATHS ${SFML_LIBRARY_DIR})
+    FIND_LIBRARY(LIB_SFML_WINDOW sfml-window-d.lib PATHS ${SFML_LIBRARY_DIR})
+    
+ELSEIF(UNIX)
+    FIND_LIBRARY(LIB_SFML_AUDIO sfml-audio.so PATHS ${SFML_LIBRARY_DIR})
+    FIND_LIBRARY(LIB_SFML_GRAPHICS sfml-graphics.so PATHS ${SFML_LIBRARY_DIR})
+    FIND_LIBRARY(LIB_SFML_NETWORK sfml-network.so PATHS ${SFML_LIBRARY_DIR})
+    FIND_LIBRARY(LIB_SFML_SYSTEM sfml-system.so PATHS ${SFML_LIBRARY_DIR})
+    FIND_LIBRARY(LIB_SFML_WINDOW sfml-window.so PATHS ${SFML_LIBRARY_DIR})
+ENDIF(WIN32)
+
+IF(NOT LIB_SFML_AUDIO)
+    MESSAGE(FATAL_ERROR "Can't find LIB_SFML_AUDIO")
+ENDIF()
+
+IF(NOT LIB_SFML_GRAPHICS)
+    MESSAGE(FATAL_ERROR "Can't find LIB_SFML_GRAPHICS")
+ENDIF()
+
+IF(NOT LIB_SFML_NETWORK)
+    MESSAGE(FATAL_ERROR "Can't find LIB_SFML_NETWORK")
+ENDIF()
+
+IF(NOT LIB_SFML_SYSTEM)
+    MESSAGE(FATAL_ERROR "Can't find LIB_SFML_SYSTEM")
+ENDIF()
+
+IF(NOT LIB_SFML_WINDOW)
+    MESSAGE(FATAL_ERROR "Can't find LIB_SFML_WINDOW")
+ENDIF()
+
+SET(SFML_LIBRARIES ${LIB_SFML_AUDIO}
+                    ${LIB_SFML_GRAPHICS}
+                    ${LIB_SFML_NETWORK}
+                    ${LIB_SFML_SYSTEM}
+                    ${LIB_SFML_WINDOW}
+    CACHE STRING "sfml libraries")
