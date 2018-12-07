@@ -8,6 +8,11 @@ void idToken::AppendCharacter(char a)
     m_buffer.push_back(a);
 }
 
+int idToken::Length() const
+{
+    return static_cast<int>(m_buffer.size());
+}
+
 
 /*
 ================

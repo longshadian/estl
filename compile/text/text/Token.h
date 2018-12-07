@@ -3,17 +3,45 @@
 enum TokenType
 {
     TT_Identifier,
+    TT_STRING =					1,		// string
+    TT_LITERAL =				2,		// literal
+    TT_NUMBER =					3,		// number
+    TT_NAME =					4,		// name
+    TT_PUNCTUATION =			5,		// punctuation
 };
 
 // token types
+/*
 #define TT_STRING					1		// string
 #define TT_LITERAL					2		// literal
 #define TT_NUMBER					3		// number
 #define TT_NAME						4		// name
 #define TT_PUNCTUATION				5		// punctuation
+*/
 
+enum TokenSubType
+{
+    TT_INTEGER =					0x00001,		// integer
+    TT_DECIMAL =					0x00002,		// decimal number
+    TT_HEX =						0x00004,		// hexadecimal number
+    TT_OCTAL =  					0x00008,		// octal number
+    TT_BINARY = 					0x00010,		// binary number
+    TT_LONG = 						0x00020,		// long int
+    TT_UNSIGNED =					0x00040,		// unsigned int
+    TT_FLOAT =  					0x00080,		// floating point number
+    TT_SINGLE_PRECISION = 			0x00100,		// float
+    TT_DOUBLE_PRECISION = 			0x00200,		// double
+    TT_EXTENDED_PRECISION = 		0x00400,		// long double
+    TT_INFINITE =					0x00800,		// infinite 1.#INF
+    TT_INDEFINITE = 				0x01000,		// indefinite 1.#IND
+    TT_NAN = 						0x02000,		// NaN
+    TT_IPADDRESS =  				0x04000,		// ip address
+    TT_IPPORT = 					0x08000,		// ip port
+    TT_VALUESVALID = 				0x10000,		// set if intvalue and floatvalue are valid
+};
 
 // number sub types
+/*
 #define TT_INTEGER					0x00001		// integer
 #define TT_DECIMAL					0x00002		// decimal number
 #define TT_HEX						0x00004		// hexadecimal number
@@ -31,6 +59,7 @@ enum TokenType
 #define TT_IPADDRESS				0x04000		// ip address
 #define TT_IPPORT					0x08000		// ip port
 #define TT_VALUESVALID				0x10000		// set if intvalue and floatvalue are valid
+*/
 
 // string sub type is the length of the string
 // literal sub type is the ASCII code
@@ -49,6 +78,7 @@ public:
 	int				flags;								// token flags, used for recursive defines
 
     void			AppendCharacter(char a);
+    int             Length() const;
 
     std::string      m_name;
     std::vector<char> m_buffer;

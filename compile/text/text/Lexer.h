@@ -74,6 +74,7 @@ struct Punctuation
     const char* m_p;  // punctuation character(s)
 	int         m_n;   // punctuation id
 };
+using punctuation_t = Punctuation;
 
 class idLexer 
 {
@@ -203,14 +204,14 @@ private:
 	idStr			filename;				// file name of the script
 	int				allocated;				// true if buffer memory was allocated
 	const char *	buffer;					// buffer containing the script
-	const char *	script_p;				// current pointer in the script
+	const char *	m_script;				// current pointer in the script
 	const char *	end_p;					// pointer to the end of the script
 	const char *	lastScript_p;			// script pointer before reading token
 	const char *	whiteSpaceStart_p;		// start of last white space
 	const char *	whiteSpaceEnd_p;		// end of last white space
 	ID_TIME_T			fileTime;				// file time
 	int				length;					// length of the script in bytes
-	int				line;					// current line in script
+	int				m_line;					// current line in script
 	int				lastline;				// line before reading token
 	int				tokenavailable;			// set by unreadToken
 	int				flags;					// several script flags
@@ -227,10 +228,10 @@ private:
 	void			CreatePunctuationTable( const punctuation_t *punctuations );
 	int				ReadWhiteSpace( void );
 	int				ReadEscapeCharacter( char *ch );
-	int				ReadString( idToken *token, int quote );
+	int				ReadString(idToken* token, int quote);
 	int				ReadName( idToken *token );
-	int				ReadNumber( idToken *token );
-	int				ReadPunctuation( idToken *token );
+	int				ReadNumber(idToken* token);
+	int				ReadPunctuation(idToken* token);
 	int				ReadPrimitive( idToken *token );
 	int				CheckString( const char *str ) const;
 	int				NumLinesCrossed( void );
@@ -241,7 +242,7 @@ ID_INLINE const char *idLexer::GetFileName( void ) {
 }
 
 ID_INLINE const int idLexer::GetFileOffset( void ) {
-	return idLexer::script_p - idLexer::buffer;
+	return idLexer::m_script - idLexer::buffer;
 }
 
 ID_INLINE const ID_TIME_T idLexer::GetFileTime( void ) {
@@ -249,7 +250,7 @@ ID_INLINE const ID_TIME_T idLexer::GetFileTime( void ) {
 }
 
 ID_INLINE const int idLexer::GetLineNum( void ) {
-	return idLexer::line;
+	return idLexer::m_line;
 }
 
 ID_INLINE void idLexer::SetFlags( int flags ) {
