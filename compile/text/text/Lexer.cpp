@@ -1,20 +1,81 @@
 #include "Lexer.h"
 
+#include <utility>
+
 #include "File.h"
 #include "Log.h"
 
-#pragma hdrstop
-
-#define PUNCTABLE
+const std::string g_keyword[] =
+{
+    "asm",
+    "do",
+    "if",
+    "return",
+    "auto",
+    "double",
+    "inline",
+    "short",
+    "bool",
+    "dynamic_cast",
+    "int",
+    "signed",
+    "break",
+    "else",
+    "long",
+    "sizeof",
+    "case",
+    "enum",
+    "mutable",
+    "static",
+    "catch",
+    "explicit",
+    "namespace",
+    "static_cast",
+    "char",
+    "export",
+    "new",
+    "struct",
+    "class",
+    "extern",
+    "operator",
+    "switch",
+    "const",
+    "false",
+    "private",
+    "template",
+    "const_cast",
+    "float",
+    "protected",
+    "this",
+    "continue",
+    "for",
+    "public",
+    "throw",
+    "default",
+    "friend",
+    "register",
+    "true",
+    "delete",
+    "goto",
+    "reinterpret_cast",
+    "constexpr",
+    "decltype",
+    "noexcept",
+    "nullptr",
+    "static_assert",
+};
 
 //longer punctuations first
-Punctuation default_punctuations[] = {
+const
+Punctuation g_default_punctuations[] = 
+{
 	//binary operators
 	{">>=",P_RSHIFT_ASSIGN},
 	{"<<=",P_LSHIFT_ASSIGN},
 	//
 	{"...",P_PARMS},
 	//define merge operator
+    {"#", P_MACRO},
 	{"##",P_PRECOMPMERGE},				// pre-compiler
 	//logic operators
 	{"&&",P_LOGIC_AND},					// pre-compiler
@@ -40,8 +101,8 @@ Punctuation default_punctuations[] = {
 	//reference operators
 	{"->",P_POINTERREF},
 	//C++
-	{"::",P_CPP1},
-	{".*",P_CPP2},
+	{"::",P_NAMESPACE},
+	{".*",P_REF_MUL},
 	//arithmatic operators
 	{"*",P_MUL},						// pre-compiler
 	{"/",P_DIV},						// pre-compiler
@@ -68,12 +129,12 @@ Punctuation default_punctuations[] = {
 	//if statement
 	{"?",P_QUESTIONMARK},				// pre-compiler
 	//embracements
-	{"(",P_PARENTHESESOPEN},			// pre-compiler
-	{")",P_PARENTHESESCLOSE},			// pre-compiler
-	{"{",P_BRACEOPEN},					// pre-compiler
-	{"}",P_BRACECLOSE},					// pre-compiler
-	{"[",P_SQBRACKETOPEN},
-	{"]",P_SQBRACKETCLOSE},
+	{"(",P_PARENTHESES_OPEN},			// pre-compiler
+	{")",P_PARENTHESES_CLOSE},			// pre-compiler
+	{"{",P_BRACE_OPEN},					// pre-compiler
+	{"}",P_BRACE_CLOSE},				// pre-compiler
+	{"[",P_SQBRACKET_OPEN},
+	{"]",P_SQBRACKET_CLOSE},
 	//
 	{"\\",P_BACKSLASH},
 	//precompiler operator
@@ -82,12 +143,20 @@ Punctuation default_punctuations[] = {
 	{NULL, 0}
 };
 
-int default_punctuationtable[256];
-int default_nextpunctuation[sizeof(default_punctuations) / sizeof(punctuation_t)];
-int default_setup;
+idLexer::idLexer()
+    : m_buffer()
+    , m_current_p()
+    , m_line()
+    , m_lastline()
+    , m_token()
+{
+    const char eof_ex = '\0';
+    m_current_p = &eof_ex;
+}
 
-char idLexer::baseFolder[ 256 ];
-
+idLexer::~idLexer()
+{
+}
 
 int idLexer::LoadFile(const char* filename)
 {
@@ -109,59 +178,30 @@ int idLexer::LoadFile(const char* filename)
 	return 1;
 }
 
+bool idLexer::EndOfToken() const
+{
+    if (!*m_current_p)
+        return true;
+    return false;
+}
+
 int idLexer::GetToken(idToken* token)
 {
-	// start of the white space
-	// read white space before token
-    if (!SkipWhiteSpaceAndComment()) {
-        return 0;
-    }
-
-    int c = *m_current_p;
-    if (('A' <= c && c <= 'Z') ||
-        ('a' <= c && c <= 'z') ||
-        c == '_') {
-        if (ParseIdentifier(token)) {
-            return 0;
-        }
-    } else if ('0' <= c && c <= '9') {
-
-    }
-
-	// if there is a number
-	if (('0' <= c && c <= '9') ||
-			(c == '.' && (*(idLexer::m_script + 1) >= '0' && *(idLexer::m_script + 1) <= '9'))) {
-		if (!ReadNumber(token)) {
-			return 0;
-		}
-	}
-	// if there is a leading quote
-	else if (c == '\"' || c == '\'') {
-		if (!idLexer::ReadString(token, c)) {
-			return 0;
-		}
-	}
-	// check for punctuations
-	else if (!idLexer::ReadPunctuation(token)) {
-		idLexer::Error("unknown punctuation %c", c);
-		return 0;
-	}
-	// succesfully read a token
-	return 1;
+    return ReadToken(token);
 }
 
 int idLexer::SkipWhiteSpaceAndComment()
 {
 	while (1) {
 		// skip white space
-		while (*m_current_p <= ' ') {
+		while(*m_current_p <= ' ') {
 			if (!*m_current_p) {
-				return 0;
+				return 1;
 			}
 			if (*m_current_p == '\n') {
-                m_line++;
+				m_line++;
 			}
-            m_current_p++;
+			m_current_p++;
 		}
 
 		// skip comments
@@ -172,13 +212,13 @@ int idLexer::SkipWhiteSpaceAndComment()
 				do {
                     m_current_p++;
 					if (!*m_current_p) {
-						return 0;
+						return 1;
 					}
 				} while (*m_current_p != '\n');
                 m_line++;
                 m_current_p++;
 				if (!*m_current_p) {
-					return 0;
+					return 1;
 				}
 				continue;
 			} else if (*(m_current_p + 1) == '*') {
@@ -196,17 +236,13 @@ int idLexer::SkipWhiteSpaceAndComment()
 							break;
 						}
 						if (*(m_current_p + 1) == '*' ) {
-                            LOG(warning) << "nested comment";
+                            //LOG(warning) << "nested comment";
 						}
 					}
 				}
                 m_current_p++;
 				if (!*m_current_p) {
-					return 0;
-				}
-                m_current_p++;
-				if (!m_current_p) {
-					return 0;
+					return 1;
 				}
 				continue;
 			}
@@ -216,261 +252,55 @@ int idLexer::SkipWhiteSpaceAndComment()
 	return 1;
 }
 
-int idLexer::ParseIdentifier(idToken* token)
+int idLexer::Line() const
 {
-    token->type = TokenType::TT_Identifier;
-    char c = *m_current_p;
-    do {
-        token->AppendCharacter(c);
-        m_current_p++;
-        c = *m_current_p;
-    } while (
-        ('A' <= c && c <= 'Z') ||
+    return m_line;
+}
+
+int idLexer::ReadToken(idToken* token)
+{
+    if (!*m_current_p) {
+        token->m_type = TokenType::Eof;
+        return 1;
+    }
+
+	// start of the white space read white space before token
+    if (!SkipWhiteSpaceAndComment()) {
+        return 0;
+    }
+
+    if (!*m_current_p) {
+        token->m_type = TokenType::Eof;
+        return 1;
+    }
+
+    int c = *m_current_p;
+    if (('A' <= c && c <= 'Z') ||
         ('a' <= c && c <= 'z') ||
-        (c == '_')
-    );
-    return 1;
-}
-
-int idLexer::ParseNumber(idToken* token)
-{
-
-}
-
-/*
-================
-idLexer::CreatePunctuationTable
-================
-*/
-void idLexer::CreatePunctuationTable( const punctuation_t *punctuations ) {
-	int i, n, lastp;
-	const punctuation_t *p, *newp;
-
-	//get memory for the table
-	if ( punctuations == default_punctuations ) {
-		idLexer::punctuationtable = default_punctuationtable;
-		idLexer::nextpunctuation = default_nextpunctuation;
-		if ( default_setup ) {
-			return;
-		}
-		default_setup = true;
-		i = sizeof(default_punctuations) / sizeof(punctuation_t);
-	}
-	else {
-		if ( !idLexer::punctuationtable || idLexer::punctuationtable == default_punctuationtable ) {
-			idLexer::punctuationtable = (int *) Mem_Alloc(256 * sizeof(int));
-		}
-		if ( idLexer::nextpunctuation && idLexer::nextpunctuation != default_nextpunctuation ) {
-			Mem_Free( idLexer::nextpunctuation );
-		}
-		for (i = 0; punctuations[i].p; i++) {
-		}
-		idLexer::nextpunctuation = (int *) Mem_Alloc(i * sizeof(int));
-	}
-	memset(idLexer::punctuationtable, 0xFF, 256 * sizeof(int));
-	memset(idLexer::nextpunctuation, 0xFF, i * sizeof(int));
-	//add the punctuations in the list to the punctuation table
-	for (i = 0; punctuations[i].p; i++) {
-		newp = &punctuations[i];
-		lastp = -1;
-		//sort the punctuations in this table entry on length (longer punctuations first)
-		for (n = idLexer::punctuationtable[(unsigned int) newp->p[0]]; n >= 0; n = idLexer::nextpunctuation[n] ) {
-			p = &punctuations[n];
-			if (strlen(p->p) < strlen(newp->p)) {
-				idLexer::nextpunctuation[i] = n;
-				if (lastp >= 0) {
-					idLexer::nextpunctuation[lastp] = i;
-				}
-				else {
-					idLexer::punctuationtable[(unsigned int) newp->p[0]] = i;
-				}
-				break;
-			}
-			lastp = n;
-		}
-		if (n < 0) {
-			idLexer::nextpunctuation[i] = -1;
-			if (lastp >= 0) {
-				idLexer::nextpunctuation[lastp] = i;
-			}
-			else {
-				idLexer::punctuationtable[(unsigned int) newp->p[0]] = i;
-			}
+        c == '_') {
+        if (!ReadName(token)) {
+            return 0;
+        }
+    } 
+    // if there is a number
+    else if (('0' <= c && c <= '9') ||
+			(c == '.' && (*(m_current_p + 1) >= '0' && *(m_current_p + 1) <= '9'))) {
+		if (!ReadNumber(token)) {
+			return 0;
 		}
 	}
-}
-
-/*
-================
-idLexer::GetPunctuationFromId
-================
-*/
-const char *idLexer::GetPunctuationFromId( int id ) {
-	int i;
-
-	for (i = 0; idLexer::punctuations[i].p; i++) {
-		if ( idLexer::punctuations[i].n == id ) {
-			return idLexer::punctuations[i].p;
+	// if there is a leading quote
+	else if (c == '\"' || c == '\'') {
+		if (!ReadString(token, c)) {
+			return 0;
 		}
 	}
-	return "unkown punctuation";
-}
-
-/*
-================
-idLexer::GetPunctuationId
-================
-*/
-int idLexer::GetPunctuationId( const char *p ) {
-	int i;
-
-	for (i = 0; idLexer::punctuations[i].p; i++) {
-		if ( !strcmp(idLexer::punctuations[i].p, p) ) {
-			return idLexer::punctuations[i].n;
-		}
+	// check for punctuations
+	else if (!ReadPunctuation(token)) {
+        LOG(error) << "unknown punctuation " << c;
+		return 0;
 	}
-	return 0;
-}
-
-/*
-================
-idLexer::Error
-================
-*/
-void idLexer::Error( const char *str, ... ) {
-	char text[MAX_STRING_CHARS];
-	va_list ap;
-
-	hadError = true;
-
-	if ( idLexer::flags & LEXFL_NOERRORS ) {
-		return;
-	}
-
-	va_start(ap, str);
-	vsprintf(text, str, ap);
-	va_end(ap);
-
-	if ( idLexer::flags & LEXFL_NOFATALERRORS ) {
-		idLib::common->Warning( "file %s, line %d: %s", idLexer::filename.c_str(), idLexer::m_line, text );
-	} else {
-		idLib::common->Error( "file %s, line %d: %s", idLexer::filename.c_str(), idLexer::m_line, text );
-	}
-}
-
-/*
-================
-idLexer::Warning
-================
-*/
-void idLexer::Warning( const char *str, ... ) {
-	char text[MAX_STRING_CHARS];
-	va_list ap;
-
-	if ( idLexer::flags & LEXFL_NOWARNINGS ) {
-		return;
-	}
-
-	va_start( ap, str );
-	vsprintf( text, str, ap );
-	va_end( ap );
-	idLib::common->Warning( "file %s, line %d: %s", idLexer::filename.c_str(), idLexer::m_line, text );
-}
-
-/*
-================
-idLexer::SetPunctuations
-================
-*/
-void idLexer::SetPunctuations( const punctuation_t *p ) {
-#ifdef PUNCTABLE
-	if (p) {
-		idLexer::CreatePunctuationTable( p );
-	}
-	else {
-		idLexer::CreatePunctuationTable( default_punctuations );
-	}
-#endif //PUNCTABLE
-	if (p) {
-		idLexer::punctuations = p;
-	}
-	else {
-		idLexer::punctuations = default_punctuations;
-	}
-}
-
-/*
-================
-idLexer::ReadWhiteSpace
-
-Reads spaces, tabs, C-like comments etc.
-When a newline character is found the scripts line counter is increased.
-================
-*/
-int idLexer::ReadWhiteSpace( void ) {
-	while(1) {
-		// skip white space
-		while(*idLexer::m_script <= ' ') {
-			if (!*idLexer::m_script) {
-				return 0;
-			}
-			if (*idLexer::m_script == '\n') {
-				idLexer::m_line++;
-			}
-			idLexer::m_script++;
-		}
-		// skip comments
-		if (*idLexer::m_script == '/') {
-			// comments //
-			if (*(idLexer::m_script+1) == '/') {
-				idLexer::m_script++;
-				do {
-					idLexer::m_script++;
-					if ( !*idLexer::m_script ) {
-						return 0;
-					}
-				}
-				while( *idLexer::m_script != '\n' );
-				idLexer::m_line++;
-				idLexer::m_script++;
-				if ( !*idLexer::m_script ) {
-					return 0;
-				}
-				continue;
-			}
-			// comments /* */
-			else if (*(idLexer::m_script+1) == '*') {
-				idLexer::m_script++;
-				while( 1 ) {
-					idLexer::m_script++;
-					if ( !*idLexer::m_script ) {
-						return 0;
-					}
-					if ( *idLexer::m_script == '\n' ) {
-						idLexer::m_line++;
-					}
-					else if ( *idLexer::m_script == '/' ) {
-						if ( *(idLexer::m_script-1) == '*' ) {
-							break;
-						}
-						if ( *(idLexer::m_script+1) == '*' ) {
-							idLexer::Warning( "nested comment" );
-						}
-					}
-				}
-				idLexer::m_script++;
-				if ( !*idLexer::m_script ) {
-					return 0;
-				}
-				idLexer::m_script++;
-				if ( !*idLexer::m_script ) {
-					return 0;
-				}
-				continue;
-			}
-		}
-		break;
-	}
+	// succesfully read a token
 	return 1;
 }
 
@@ -479,9 +309,9 @@ int idLexer::ReadEscapeCharacter(char* ch)
     int c;
 
 	// step over the leading '\\'
-	m_script++;
+	m_current_p++;
 	// determine the escape character
-	switch(*idLexer::m_script) {
+	switch(*m_current_p) {
 		case '\\': c = '\\'; break;
 		case 'n': c = '\n'; break;
 		case 'r': c = '\r'; break;
@@ -495,10 +325,10 @@ int idLexer::ReadEscapeCharacter(char* ch)
 		case '\?': c = '\?'; break;
 		case 'x':
 		{
-			m_script++;
-            int val;
-			for (int i = 0, val = 0; ; i++, m_script++) {
-				c = *m_script;
+			m_current_p++;
+            int val = 0;
+			for (int i = 0, val = 0; ; i++, m_current_p++) {
+				c = *m_current_p;
 				if (c >= '0' && c <= '9')
 					c = c - '0';
 				else if (c >= 'A' && c <= 'Z')
@@ -509,9 +339,9 @@ int idLexer::ReadEscapeCharacter(char* ch)
 					break;
 				val = (val << 4) + c;
 			}
-			m_script--;
+			m_current_p--;
 			if (val > 0xFF) {
-				idLexer::Warning( "too large value in escape character" );
+				LOG(warning) << "too large value in escape character";
 				val = 0xFF;
 			}
 			c = val;
@@ -519,21 +349,21 @@ int idLexer::ReadEscapeCharacter(char* ch)
 		}
 		default: //NOTE: decimal ASCII code, NOT octal
 		{
-			if (*m_script < '0' || *m_script > '9') {
-				idLexer::Error("unknown escape char");
+			if (*m_current_p < '0' || *m_current_p > '9') {
+				LOG(error) << "unknown escape char";
 			}
             int val;
-			for (int i = 0, val = 0; ; i++, m_script++) {
-				c = *m_script;
+			for (int i = 0, val = 0; ; i++, m_current_p++) {
+				c = *m_current_p;
 				if (c >= '0' && c <= '9')
 					c = c - '0';
 				else
 					break;
 				val = val * 10 + c;
 			}
-			m_script--;
+			m_current_p--;
 			if (val > 0xFF) {
-				idLexer::Warning( "too large value in escape character" );
+				LOG(warning) << "too large value in escape character";
 				val = 0xFF;
 			}
 			c = val;
@@ -541,7 +371,7 @@ int idLexer::ReadEscapeCharacter(char* ch)
 		}
 	}
 	// step over the escape character or the last digit of the number
-	m_script++;
+	m_current_p++;
 	// store the escape character
 	*ch = c;
 	// succesfully read escape character
@@ -559,65 +389,65 @@ Reads two strings with only a white space between them as one string.
 int idLexer::ReadString(idToken* token, int quote) 
 {
 	if (quote == '\"') {
-		token->type = TT_STRING;
+        token->m_type = TokenType::String;
 	} else {
-		token->type = TT_LITERAL;
+        token->m_type = TokenType::Literal;
 	}
 
 	// leading quote
-	m_script++;
+	m_current_p++;
 
 	while (1) {
 		// if there is an escape character and escape characters are allowed
-		if (*idLexer::m_script == '\\') {
+		if (*m_current_p == '\\') {
             char ch = 0;
 			if (!ReadEscapeCharacter(&ch)) {
 				return 0;
 			}
-			token->AppendDirty(ch);
+			token->AppendCharacter(ch);
 		}
 		// if a trailing quote
-		else if (*m_script == quote) {
+		else if (*m_current_p == quote) {
 			// step over the quote
-			m_script++;
+			m_current_p++;
 
-            const char* tmpscript_p = m_script;
+            const char* tmpscript_p = m_current_p;
             int tmpline = m_line;
 			// read white space between possible two consecutive strings
-			if (!idLexer::ReadWhiteSpace()) {
-				m_script = tmpscript_p;
+			if (!ReadWhiteSpace()) {
+				m_current_p = tmpscript_p;
 				m_line = tmpline;
 				break;
 			}
 
 			// if there's no leading qoute
-			if (*m_script != quote) {
-				m_script = tmpscript_p;
+			if (*m_current_p != quote) {
+				m_current_p = tmpscript_p;
 				m_line = tmpline;
 				break;
 			}
 			// step over the new leading quote
-			m_script++;
+			m_current_p++;
 		} else {
-			if (*m_script == '\0') {
-				idLexer::Error( "missing trailing quote" );
+			if (*m_current_p == '\0') {
+                LOG(error) <<"missing trailing quote";
 				return 0;
 			}
-			if (*m_script == '\n') {
-				idLexer::Error( "newline inside string" );
+			if (*m_current_p == '\n') {
+				LOG(error) << "newline inside string";
 				return 0;
 			}
-			token->AppendDirty(*m_script++);
+			token->AppendCharacter(*m_current_p++);
 		}
 	}
     // TODO token data
 	//token->data[token->len] = '\0';
 
-	if (token->type == TT_LITERAL) {
-		token->subtype = (*token)[0];
+	if (token->m_type == TokenType::Literal) {
+        token->m_subtype = token->GetCharacter(0);
 	} else {
 		// the sub type is the length of the string
-		token->subtype = token->Length();
+		token->m_subtype = token->Length();
 	}
 	return 1;
 }
@@ -627,24 +457,26 @@ int idLexer::ReadString(idToken* token, int quote)
 idLexer::ReadName
 ================
 */
-int idLexer::ReadName( idToken *token ) {
-	char c;
-
-	token->type = TT_NAME;
+int idLexer::ReadName(idToken* token)
+{
+	char c = 0;
+    token->m_type = TokenType::Identifier;
 	do {
-		token->AppendDirty( *idLexer::m_script++ );
-		c = *idLexer::m_script;
+        token->AppendCharacter(*m_current_p++);
+		c = *m_current_p;
 	} while ((c >= 'a' && c <= 'z') ||
 				(c >= 'A' && c <= 'Z') ||
 				(c >= '0' && c <= '9') ||
 				c == '_' ||
 				// if treating all tokens as strings, don't parse '-' as a seperate token
-				((idLexer::flags & LEXFL_ONLYSTRINGS) && (c == '-')) ||
-				// if special path name characters are allowed
-				((idLexer::flags & LEXFL_ALLOWPATHNAMES) && (c == '/' || c == '\\' || c == ':' || c == '.')) );
-	token->data[token->len] = '\0';
+				(c == '-')
+				);
 	//the sub type is the length of the name
-	token->subtype = token->Length();
+	token->m_subtype = token->Length();
+
+    if (std::find(std::begin(g_keyword), std::end(g_keyword), token->AsStringView()) != std::end(g_keyword))
+        token->m_type = TokenType::Keyword;
+
 	return 1;
 }
 
@@ -653,11 +485,12 @@ int idLexer::ReadName( idToken *token ) {
 idLexer::CheckString
 ================
 */
-ID_INLINE int idLexer::CheckString( const char *str ) const {
+int idLexer::CheckString( const char *str ) const
+{
 	int i;
 
 	for ( i = 0; str[i]; i++ ) {
-		if ( idLexer::m_script[i] != str[i] ) {
+		if ( m_current_p[i] != str[i] ) {
 			return false;
 		}
 	}
@@ -666,37 +499,37 @@ ID_INLINE int idLexer::CheckString( const char *str ) const {
 
 int idLexer::ReadNumber(idToken* token) 
 {
-	token->type = TT_NUMBER;
-	token->subtype = 0;
-	token->intvalue = 0;
-	token->floatvalue = 0;
+    token->m_type = TokenType::Number;
+	token->m_subtype = 0;
+	token->m_intvalue = 0;
+	token->m_floatvalue = 0;
 
-    char c = *m_script;
-    char c2 = *(m_script + 1);
+    char c = *m_current_p;
+    char c2 = *(m_current_p + 1);
 
 	if (c == '0' && c2 != '.') {
 		// check for a hexadecimal number
 		if (c2 == 'x' || c2 == 'X') {
-			token->AppendDirty(*m_script++);
-			token->AppendDirty(*m_script++);
-			c = *m_script;
+			token->AppendCharacter(*m_current_p++);
+			token->AppendCharacter(*m_current_p++);
+			c = *m_current_p;
 			while(('0' <= c && c <= '9') ||
 						('a' <= c && c <= 'f') ||
 						('A' <= c && c <= 'F')) {
-				token->AppendDirty(c);
-				c = *(++m_script);
+				token->AppendCharacter(c);
+				c = *(++m_current_p);
 			}
-			token->subtype = TT_HEX | TT_INTEGER;
+			token->m_subtype = TT_HEX | TT_INTEGER;
 		}
 		// its an octal number
 		else {
-			token->AppendDirty(*m_script++);
-			c = *m_script;
+			token->AppendCharacter(*m_current_p++);
+			c = *m_current_p;
 			while('0' <= c && c <= '7') {
-				token->AppendDirty(c);
-				c = *(++m_script);
+				token->AppendCharacter(c);
+				c = *(++m_current_p);
 			}
-			token->subtype = TT_OCTAL | TT_INTEGER;
+			token->m_subtype = TT_OCTAL | TT_INTEGER;
 		}
 	}
 	else {
@@ -709,8 +542,8 @@ int idLexer::ReadNumber(idToken* token)
 			} else {
 				break;
 			}
-			token->AppendDirty(c);
-			c = *(++m_script);
+			token->AppendCharacter(c);
+			c = *(++m_current_p);
 		}
 		if (c == 'e' && dot == 0) {
 			//We have scientific notation without a decimal point
@@ -718,70 +551,70 @@ int idLexer::ReadNumber(idToken* token)
 		}
 		// if a floating point number
 		if (dot == 1) {
-			token->subtype = TT_DECIMAL | TT_FLOAT;
+			token->m_subtype = TT_DECIMAL | TT_FLOAT;
 			// check for floating point exponent
 			if (c == 'e') {
 				//Append the e so that GetFloatValue code works
-				token->AppendDirty(c);
-				c = *(++m_script);
+				token->AppendCharacter(c);
+				c = *(++m_current_p);
 				if (c == '-') {
-					token->AppendDirty(c);
-					c = *(++m_script);
+					token->AppendCharacter(c);
+					c = *(++m_current_p);
 				} else if (c == '+') {
-					token->AppendDirty(c);
-					c = *(++m_script);
+					token->AppendCharacter(c);
+					c = *(++m_current_p);
 				}
 				while ('0' <= c && c <= '9') {
-					token->AppendDirty(c);
-					c = *(++m_script);
+					token->AppendCharacter(c);
+					c = *(++m_current_p);
 				}
 			}
 		} else if ( dot > 1 ) {
 			if ( dot != 3 ) {
-				idLexer::Error( "ip address should have three dots" );
+                LOG(error) <<"ip address should have three dots";
 				return 0;
 			}
-			token->subtype = TT_IPADDRESS;
+			token->m_subtype = TT_IPADDRESS;
 		}
 		else {
-			token->subtype = TT_DECIMAL | TT_INTEGER;
+			token->m_subtype = TT_DECIMAL | TT_INTEGER;
 		}
 	}
 
-	if (token->subtype & TT_FLOAT) {
+	if (token->m_subtype & TT_FLOAT) {
 		if (c > ' ') {
 			// single-precision: float
 			if (c == 'f' || c == 'F') {
-				token->subtype |= TT_SINGLE_PRECISION;
-				m_script++;
+				token->m_subtype |= TT_SINGLE_PRECISION;
+				m_current_p++;
 			}
 			// extended-precision: long double
 			else if (c == 'l' || c == 'L') {
-				token->subtype |= TT_EXTENDED_PRECISION;
-				m_script++;
+				token->m_subtype |= TT_EXTENDED_PRECISION;
+				m_current_p++;
 			}
 			// default is double-precision: double
 			else {
-				token->subtype |= TT_DOUBLE_PRECISION;
+				token->m_subtype |= TT_DOUBLE_PRECISION;
 			}
 		} else {
-			token->subtype |= TT_DOUBLE_PRECISION;
+			token->m_subtype |= TT_DOUBLE_PRECISION;
 		}
-	} else if (token->subtype & TT_INTEGER) {
+	} else if (token->m_subtype & TT_INTEGER) {
 		if (c > ' ') {
 			// default: signed long
 			for (int i = 0; i < 2; i++) {
 				// long integer
 				if (c == 'l' || c == 'L') {
-					token->subtype |= TT_LONG;
+					token->m_subtype |= TT_LONG;
 				}
 				// unsigned integer
 				else if (c == 'u' || c == 'U') {
-					token->subtype |= TT_UNSIGNED;
+					token->m_subtype |= TT_UNSIGNED;
 				} else {
 					break;
 				}
-				c = *(++m_script);
+				c = *(++m_current_p);
 			}
 		}
 	}
@@ -797,805 +630,27 @@ idLexer::ReadPunctuation
 */
 int idLexer::ReadPunctuation(idToken* token)
 {
-	int l, n, i;
-	char *p;
-	const punctuation_t *punc;
+    for (auto it = std::begin(g_default_punctuations); it != std::end(g_default_punctuations); ++it) {
+        const Punctuation& punc = *it;
+        int len = 0;
+        for (len = 0; punc.m_p[len] && m_current_p[len]; ++len) {
+            if (m_current_p[len] != punc.m_p[len])
+                break;
+        }
+        // 找到标点符号
+        if (!punc.m_p[len]) {
+            for (int i = 0; i != len; ++i) {
+                token->AppendCharacter(punc.m_p[i]);
+            }
 
-#ifdef PUNCTABLE
-	for (n = idLexer::punctuationtable[(unsigned int)*(idLexer::m_script)]; n >= 0; n = idLexer::nextpunctuation[n])
-	{
-		punc = &(idLexer::punctuations[n]);
-#else
-	int i;
-
-	for (i = 0; idLexer::punctuations[i].p; i++) {
-		punc = &idLexer::punctuations[i];
-#endif
-		p = punc->p;
-		// check for this punctuation in the script
-		for ( l = 0; p[l] && idLexer::m_script[l]; l++ ) {
-			if ( idLexer::m_script[l] != p[l] ) {
-				break;
-			}
-		}
-		if ( !p[l] ) {
-			//
-			token->EnsureAlloced( l+1, false );
-			for ( i = 0; i <= l; i++ ) {
-				token->data[i] = p[i];
-			}
-			token->len = l;
-			//
-			idLexer::m_script += l;
-			token->type = TT_PUNCTUATION;
+			m_current_p += len;
+            token->m_type = TokenType::Puncatuation;
 			// sub type is the punctuation id
-			token->subtype = punc->n;
+            token->m_subtype = punc.m_n;
 			return 1;
-		}
-	}
-	return 0;
-}
-
-/*
-================
-idLexer::ReadToken
-================
-*/
-int idLexer::ReadToken( idToken *token ) {
-	int c;
-
-	if ( !loaded ) {
-		idLib::common->Error( "idLexer::ReadToken: no file loaded" );
-		return 0;
-	}
-
-	// if there is a token available (from unreadToken)
-	if ( tokenavailable ) {
-		tokenavailable = 0;
-		*token = idLexer::token;
-		return 1;
-	}
-	// save script pointer
-	lastScript_p = m_script;
-	// save line counter
-	lastline = m_line;
-	// clear the token stuff
-	token->data[0] = '\0';
-	token->len = 0;
-	// start of the white space
-	whiteSpaceStart_p = m_script;
-	token->whiteSpaceStart_p = m_script;
-	// read white space before token
-	if ( !ReadWhiteSpace() ) {
-		return 0;
-	}
-	// end of the white space
-	idLexer::whiteSpaceEnd_p = m_script;
-	token->whiteSpaceEnd_p = m_script;
-	// line the token is on
-	token->line = m_line;
-	// number of lines crossed before token
-	token->linesCrossed = m_line - lastline;
-	// clear token flags
-	token->flags = 0;
-
-	c = *idLexer::m_script;
-
-	// if we're keeping everything as whitespace deliminated strings
-	if ( idLexer::flags & LEXFL_ONLYSTRINGS ) {
-		// if there is a leading quote
-		if ( c == '\"' || c == '\'' ) {
-			if (!idLexer::ReadString( token, c )) {
-				return 0;
-			}
-		} else if ( !idLexer::ReadName( token ) ) {
-			return 0;
-		}
-	}
-	// if there is a number
-	else if ( (c >= '0' && c <= '9') ||
-			(c == '.' && (*(idLexer::m_script + 1) >= '0' && *(idLexer::m_script + 1) <= '9')) ) {
-		if ( !idLexer::ReadNumber( token ) ) {
-			return 0;
-		}
-		// if names are allowed to start with a number
-		if ( idLexer::flags & LEXFL_ALLOWNUMBERNAMES ) {
-			c = *idLexer::m_script;
-			if ( (c >= 'a' && c <= 'z') ||	(c >= 'A' && c <= 'Z') || c == '_' ) {
-				if ( !idLexer::ReadName( token ) ) {
-					return 0;
-				}
-			}
-		}
-	}
-	// if there is a leading quote
-	else if ( c == '\"' || c == '\'' ) {
-		if (!idLexer::ReadString( token, c )) {
-			return 0;
-		}
-	}
-	// if there is a name
-	else if ( (c >= 'a' && c <= 'z') ||	(c >= 'A' && c <= 'Z') || c == '_' ) {
-		if ( !idLexer::ReadName( token ) ) {
-			return 0;
-		}
-	}
-	// names may also start with a slash when pathnames are allowed
-	else if ( ( idLexer::flags & LEXFL_ALLOWPATHNAMES ) && ( (c == '/' || c == '\\') || c == '.' ) ) {
-		if ( !idLexer::ReadName( token ) ) {
-			return 0;
-		}
-	}
-	// check for punctuations
-	else if ( !idLexer::ReadPunctuation( token ) ) {
-		idLexer::Error( "unknown punctuation %c", c );
-		return 0;
-	}
-	// succesfully read a token
-	return 1;
-}
-
-/*
-================
-idLexer::ExpectTokenString
-================
-*/
-int idLexer::ExpectTokenString( const char *string ) {
-	idToken token;
-
-	if (!idLexer::ReadToken( &token )) {
-		idLexer::Error( "couldn't find expected '%s'", string );
-		return 0;
-	}
-	if ( token != string ) {
-		idLexer::Error( "expected '%s' but found '%s'", string, token.c_str() );
-		return 0;
-	}
-	return 1;
-}
-
-/*
-================
-idLexer::ExpectTokenType
-================
-*/
-int idLexer::ExpectTokenType( int type, int subtype, idToken *token ) {
-	idStr str;
-
-	if ( !idLexer::ReadToken( token ) ) {
-		idLexer::Error( "couldn't read expected token" );
-		return 0;
-	}
-
-	if ( token->type != type ) {
-		switch( type ) {
-			case TT_STRING: str = "string"; break;
-			case TT_LITERAL: str = "literal"; break;
-			case TT_NUMBER: str = "number"; break;
-			case TT_NAME: str = "name"; break;
-			case TT_PUNCTUATION: str = "punctuation"; break;
-			default: str = "unknown type"; break;
-		}
-		idLexer::Error( "expected a %s but found '%s'", str.c_str(), token->c_str() );
-		return 0;
-	}
-	if ( token->type == TT_NUMBER ) {
-		if ( (token->subtype & subtype) != subtype ) {
-			str.Clear();
-			if ( subtype & TT_DECIMAL ) str = "decimal ";
-			if ( subtype & TT_HEX ) str = "hex ";
-			if ( subtype & TT_OCTAL ) str = "octal ";
-			if ( subtype & TT_BINARY ) str = "binary ";
-			if ( subtype & TT_UNSIGNED ) str += "unsigned ";
-			if ( subtype & TT_LONG ) str += "long ";
-			if ( subtype & TT_FLOAT ) str += "float ";
-			if ( subtype & TT_INTEGER ) str += "integer ";
-			str.StripTrailing( ' ' );
-			idLexer::Error( "expected %s but found '%s'", str.c_str(), token->c_str() );
-			return 0;
-		}
-	}
-	else if ( token->type == TT_PUNCTUATION ) {
-		if ( subtype < 0 ) {
-			idLexer::Error( "BUG: wrong punctuation subtype" );
-			return 0;
-		}
-		if ( token->subtype != subtype ) {
-			idLexer::Error( "expected '%s' but found '%s'", GetPunctuationFromId( subtype ), token->c_str() );
-			return 0;
-		}
-	}
-	return 1;
-}
-
-/*
-================
-idLexer::ExpectAnyToken
-================
-*/
-int idLexer::ExpectAnyToken( idToken *token ) {
-	if (!idLexer::ReadToken( token )) {
-		idLexer::Error( "couldn't read expected token" );
-		return 0;
-	}
-	else {
-		return 1;
-	}
-}
-
-/*
-================
-idLexer::CheckTokenString
-================
-*/
-int idLexer::CheckTokenString( const char *string ) {
-	idToken tok;
-
-	if ( !ReadToken( &tok ) ) {
-		return 0;
-	}
-	// if the given string is available
-	if ( tok == string ) {
-		return 1;
-	}
-	// unread token
-	m_script = lastScript_p;
-	m_line = lastline;
-	return 0;
-}
-
-/*
-================
-idLexer::CheckTokenType
-================
-*/
-int idLexer::CheckTokenType( int type, int subtype, idToken *token ) {
-	idToken tok;
-
-	if ( !ReadToken( &tok ) ) {
-		return 0;
-	}
-	// if the type matches
-	if (tok.type == type && (tok.subtype & subtype) == subtype) {
-		*token = tok;
-		return 1;
-	}
-	// unread token
-	m_script = lastScript_p;
-	m_line = lastline;
-	return 0;
-}
-
-/*
-================
-idLexer::PeekTokenString
-================
-*/
-int idLexer::PeekTokenString( const char *string ) {
-	idToken tok;
-
-	if ( !ReadToken( &tok ) ) {
-		return 0;
-	}
-
-	// unread token
-	m_script = lastScript_p;
-	m_line = lastline;
-
-	// if the given string is available
-	if ( tok == string ) {
-		return 1;
-	}
-	return 0;
-}
-
-/*
-================
-idLexer::PeekTokenType
-================
-*/
-int idLexer::PeekTokenType( int type, int subtype, idToken *token ) {
-	idToken tok;
-
-	if ( !ReadToken( &tok ) ) {
-		return 0;
-	}
-
-	// unread token
-	m_script = lastScript_p;
-	m_line = lastline;
-
-	// if the type matches
-	if ( tok.type == type && ( tok.subtype & subtype ) == subtype ) {
-		*token = tok;
-		return 1;
-	}
-	return 0;
-}
-
-/*
-================
-idLexer::SkipUntilString
-================
-*/
-int idLexer::SkipUntilString( const char *string ) {
-	idToken token;
-
-	while(idLexer::ReadToken( &token )) {
-		if ( token == string ) {
-			return 1;
-		}
-	}
-	return 0;
-}
-
-/*
-================
-idLexer::SkipRestOfLine
-================
-*/
-int idLexer::SkipRestOfLine( void ) {
-	idToken token;
-
-	while(idLexer::ReadToken( &token )) {
-		if ( token.linesCrossed ) {
-			idLexer::m_script = lastScript_p;
-			idLexer::m_line = lastline;
-			return 1;
-		}
-	}
-	return 0;
-}
-
-/*
-=================
-idLexer::SkipBracedSection
-
-Skips until a matching close brace is found.
-Internal brace depths are properly skipped.
-=================
-*/
-int idLexer::SkipBracedSection( bool parseFirstBrace ) {
-	idToken token;
-	int depth;
-
-	depth = parseFirstBrace ? 0 : 1;
-	do {
-		if ( !ReadToken( &token ) ) {
-			return false;
-		}
-		if ( token.type == TT_PUNCTUATION ) {
-			if ( token == "{" ) {
-				depth++;
-			} else if ( token == "}" ) {
-				depth--;
-			}
-		}
-	} while( depth );
-	return true;
-}
-
-/*
-================
-idLexer::UnreadToken
-================
-*/
-void idLexer::UnreadToken( const idToken *token ) {
-	if ( idLexer::tokenavailable ) {
-		idLib::common->FatalError( "idLexer::unreadToken, unread token twice\n" );
-	}
-	idLexer::token = *token;
-	idLexer::tokenavailable = 1;
-}
-
-/*
-================
-idLexer::ReadTokenOnLine
-================
-*/
-int idLexer::ReadTokenOnLine( idToken *token ) {
-	idToken tok;
-
-	if (!idLexer::ReadToken( &tok )) {
-		idLexer::m_script = lastScript_p;
-		idLexer::m_line = lastline;
-		return false;
-	}
-	// if no lines were crossed before this token
-	if ( !tok.linesCrossed ) {
-		*token = tok;
-		return true;
-	}
-	// restore our position
-	idLexer::m_script = lastScript_p;
-	idLexer::m_line = lastline;
-	token->Clear();
-	return false;
-}
-
-/*
-================
-idLexer::ReadRestOfLine
-================
-*/
-const char*	idLexer::ReadRestOfLine(idStr& out) {
-	while(1) {
-
-		if(*idLexer::m_script == '\n') {
-			idLexer::m_line++;
-			break;
-		}
-
-		if(!*idLexer::m_script) {
-			break;
-		}
-
-		if(*idLexer::m_script <= ' ') {
-			out += " ";
-		} else {
-			out += *idLexer::m_script;
-		}
-		idLexer::m_script++;
-
-	}
-
-	out.Strip(' ');
-	return out.c_str();
-}
-
-/*
-================
-idLexer::ParseInt
-================
-*/
-int idLexer::ParseInt( void ) {
-	idToken token;
-
-	if ( !idLexer::ReadToken( &token ) ) {
-		idLexer::Error( "couldn't read expected integer" );
-		return 0;
-	}
-	if ( token.type == TT_PUNCTUATION && token == "-" ) {
-		idLexer::ExpectTokenType( TT_NUMBER, TT_INTEGER, &token );
-		return -((signed int) token.GetIntValue());
-	}
-	else if ( token.type != TT_NUMBER || token.subtype == TT_FLOAT ) {
-		idLexer::Error( "expected integer value, found '%s'", token.c_str() );
-	}
-	return token.GetIntValue();
-}
-
-/*
-================
-idLexer::ParseBool
-================
-*/
-bool idLexer::ParseBool( void ) {
-	idToken token;
-
-	if ( !idLexer::ExpectTokenType( TT_NUMBER, 0, &token ) ) {
-		idLexer::Error( "couldn't read expected boolean" );
-		return false;
-	}
-	return ( token.GetIntValue() != 0 );
-}
-
-/*
-================
-idLexer::ParseFloat
-================
-*/
-float idLexer::ParseFloat( bool *errorFlag ) {
-	idToken token;
-
-	if ( errorFlag ) {
-		*errorFlag = false;
-	}
-
-	if ( !idLexer::ReadToken( &token ) ) {
-		if ( errorFlag ) {
-			idLexer::Warning( "couldn't read expected floating point number" );
-			*errorFlag = true;
-		} else {
-			idLexer::Error( "couldn't read expected floating point number" );
-		}
-		return 0;
-	}
-	if ( token.type == TT_PUNCTUATION && token == "-" ) {
-		idLexer::ExpectTokenType( TT_NUMBER, 0, &token );
-		return -token.GetFloatValue();
-	}
-	else if ( token.type != TT_NUMBER ) {
-		if ( errorFlag ) {
-			idLexer::Warning( "expected float value, found '%s'", token.c_str() );
-			*errorFlag = true;
-		} else {
-			idLexer::Error( "expected float value, found '%s'", token.c_str() );
-		}
-	}
-	return token.GetFloatValue();
-}
-
-/*
-================
-idLexer::Parse1DMatrix
-================
-*/
-int idLexer::Parse1DMatrix( int x, float *m ) {
-	int i;
-
-	if ( !idLexer::ExpectTokenString( "(" ) ) {
-		return false;
-	}
-
-	for ( i = 0; i < x; i++ ) {
-		m[i] = idLexer::ParseFloat();
-	}
-
-	if ( !idLexer::ExpectTokenString( ")" ) ) {
-		return false;
-	}
-	return true;
-}
-
-/*
-================
-idLexer::Parse2DMatrix
-================
-*/
-int idLexer::Parse2DMatrix( int y, int x, float *m ) {
-	int i;
-
-	if ( !idLexer::ExpectTokenString( "(" ) ) {
-		return false;
-	}
-
-	for ( i = 0; i < y; i++ ) {
-		if ( !idLexer::Parse1DMatrix( x, m + i * x ) ) {
-			return false;
-		}
-	}
-
-	if ( !idLexer::ExpectTokenString( ")" ) ) {
-		return false;
-	}
-	return true;
-}
-
-/*
-================
-idLexer::Parse3DMatrix
-================
-*/
-int idLexer::Parse3DMatrix( int z, int y, int x, float *m ) {
-	int i;
-
-	if ( !idLexer::ExpectTokenString( "(" ) ) {
-		return false;
-	}
-
-	for ( i = 0 ; i < z; i++ ) {
-		if ( !idLexer::Parse2DMatrix( y, x, m + i * x*y ) ) {
-			return false;
-		}
-	}
-
-	if ( !idLexer::ExpectTokenString( ")" ) ) {
-		return false;
-	}
-	return true;
-}
-
-/*
-=================
-idParser::ParseBracedSection
-
-The next token should be an open brace.
-Parses until a matching close brace is found.
-Maintains exact characters between braces.
-
-  FIXME: this should use ReadToken and replace the token white space with correct indents and newlines
-=================
-*/
-const char *idLexer::ParseBracedSectionExact( idStr &out, int tabs ) {
-	int		depth;
-	bool	doTabs;
-	bool	skipWhite;
-
-	out.Empty();
-
-	if ( !idLexer::ExpectTokenString( "{" ) ) {
-		return out.c_str( );
-	}
-
-	out = "{";
-	depth = 1;	
-	skipWhite = false;
-	doTabs = tabs >= 0;
-
-	while( depth && *idLexer::m_script ) {
-		char c = *(idLexer::m_script++);
-
-		switch ( c ) {
-			case '\t':
-			case ' ': {
-				if ( skipWhite ) {
-					continue;
-				}
-				break;
-			}
-			case '\n': {
-				if ( doTabs ) {
-					skipWhite = true;
-					out += c;
-					continue;
-				}
-				break;
-			}
-			case '{': {
-				depth++;
-				tabs++;
-				break;
-			}
-			case '}': {
-				depth--;
-				tabs--;
-				break;				
-			}
-		}
-
-		if ( skipWhite ) {
-			int i = tabs;
-			if ( c == '{' ) {
-				i--;
-			}
-			skipWhite = false;
-			for ( ; i > 0; i-- ) {
-				out += '\t';
-			}
-		}
-		out += c;
-	}
-	return out.c_str();
-}
-
-/*
-=================
-idLexer::ParseBracedSection
-
-The next token should be an open brace.
-Parses until a matching close brace is found.
-Internal brace depths are properly skipped.
-=================
-*/
-const char *idLexer::ParseBracedSection( idStr &out ) {
-	idToken token;
-	int i, depth;
-
-	out.Empty();
-	if ( !idLexer::ExpectTokenString( "{" ) ) {
-		return out.c_str();
-	}
-	out = "{";
-	depth = 1;
-	do {
-		if ( !idLexer::ReadToken( &token ) ) {
-			Error( "missing closing brace" );
-			return out.c_str();
-		}
-
-		// if the token is on a new line
-		for ( i = 0; i < token.linesCrossed; i++ ) {
-			out += "\r\n";
-		}
-
-		if ( token.type == TT_PUNCTUATION ) {
-			if ( token[0] == '{' ) {
-				depth++;
-			}
-			else if ( token[0] == '}' ) {
-				depth--;
-			}
-		}
-
-		if ( token.type == TT_STRING ) {
-			out += "\"" + token + "\"";
-		}
-		else {
-			out += token;
-		}
-		out += " ";
-	} while( depth );
-
-	return out.c_str();
-}
-
-/*
-=================
-idLexer::ParseRestOfLine
-
-  parse the rest of the line
-=================
-*/
-const char *idLexer::ParseRestOfLine( idStr &out ) {
-	idToken token;
-
-	out.Empty();
-	while(idLexer::ReadToken( &token )) {
-		if ( token.linesCrossed ) {
-			idLexer::m_script = lastScript_p;
-			idLexer::m_line = lastline;
-			break;
-		}
-		if ( out.Length() ) {
-			out += " ";
-		}
-		out += token;
-	}
-	return out.c_str();
-}
-
-/*
-================
-idLexer::GetLastWhiteSpace
-================
-*/
-int idLexer::GetLastWhiteSpace( idStr &whiteSpace ) const {
-	whiteSpace.Clear();
-	for ( const char *p = whiteSpaceStart_p; p < whiteSpaceEnd_p; p++ ) {
-		whiteSpace.Append( *p );
-	}
-	return whiteSpace.Length();
-}
-
-/*
-================
-idLexer::GetLastWhiteSpaceStart
-================
-*/
-int idLexer::GetLastWhiteSpaceStart( void ) const {
-	return whiteSpaceStart_p - buffer;
-}
-
-/*
-================
-idLexer::GetLastWhiteSpaceEnd
-================
-*/
-int idLexer::GetLastWhiteSpaceEnd( void ) const {
-	return whiteSpaceEnd_p - buffer;
-}
-
-/*
-================
-idLexer::Reset
-================
-*/
-void idLexer::Reset( void ) {
-	// pointer in script buffer
-	idLexer::m_script = idLexer::buffer;
-	// pointer in script buffer before reading token
-	idLexer::lastScript_p = idLexer::buffer;
-	// begin of white space
-	idLexer::whiteSpaceStart_p = NULL;
-	// end of white space
-	idLexer::whiteSpaceEnd_p = NULL;
-	// set if there's a token available in idLexer::token
-	idLexer::tokenavailable = 0;
-
-	idLexer::m_line = 1;
-	idLexer::lastline = 1;
-	// clear the saved token
-	idLexer::token = "";
-}
-
-/*
-================
-idLexer::EndOfFile
-================
-*/
-int idLexer::EndOfFile( void ) {
-	return idLexer::m_script >= idLexer::end_p;
+        }
+    }
+    return 0;
 }
 
 /*
@@ -1603,221 +658,12 @@ int idLexer::EndOfFile( void ) {
 idLexer::NumLinesCrossed
 ================
 */
-int idLexer::NumLinesCrossed( void ) {
-	return idLexer::m_line - idLexer::lastline;
-}
-
-/*
-================
-idLexer::LoadFile
-================
-*/
-int idLexer::LoadFile( const char *filename, bool OSPath )
+int idLexer::NumLinesCrossed() 
 {
-	idFile *fp;
-	idStr pathname;
-	int length;
-	char *buf;
-
-	if ( idLexer::loaded ) {
-		idLib::common->Error("idLexer::LoadFile: another script already loaded");
-		return false;
-	}
-	
-	if ( !OSPath && ( baseFolder[0] != '\0' ) ) {
-		pathname = va( "%s/%s", baseFolder, filename );
-	} else {
-		pathname = filename;
-	}
-	if ( OSPath ) {
-		fp = idLib::fileSystem->OpenExplicitFileRead( pathname );
-	} else {
-		fp = idLib::fileSystem->OpenFileRead( pathname );
-	}
-	if ( !fp ) {
-		return false;
-	}
-	length = fp->Length();
-	buf = (char *) Mem_Alloc( length + 1 );
-	buf[length] = '\0';
-	fp->Read( buf, length );
-	idLexer::fileTime = fp->Timestamp();
-	idLexer::filename = fp->GetFullPath();
-	idLib::fileSystem->CloseFile( fp );
-
-	idLexer::buffer = buf;
-	idLexer::length = length;
-	// pointer in script buffer
-	idLexer::m_script = idLexer::buffer;
-	// pointer in script buffer before reading token
-	idLexer::lastScript_p = idLexer::buffer;
-	// pointer to end of script buffer
-	idLexer::end_p = &(idLexer::buffer[length]);
-
-	idLexer::tokenavailable = 0;
-	idLexer::m_line = 1;
-	idLexer::lastline = 1;
-	idLexer::allocated = true;
-	idLexer::loaded = true;
-
-	return true;
+	return m_line - m_lastline;
 }
 
-/*
-================
-idLexer::LoadMemory
-================
-*/
-int idLexer::LoadMemory( const char *ptr, int length, const char *name, int startLine )
+const std::vector<char> idLexer::GetBuffer() const
 {
-	if ( idLexer::loaded ) {
-		idLib::common->Error("idLexer::LoadMemory: another script already loaded");
-		return false;
-	}
-	idLexer::filename = name;
-	idLexer::buffer = ptr;
-	idLexer::fileTime = 0;
-	idLexer::length = length;
-	// pointer in script buffer
-	idLexer::m_script = idLexer::buffer;
-	// pointer in script buffer before reading token
-	idLexer::lastScript_p = idLexer::buffer;
-	// pointer to end of script buffer
-	idLexer::end_p = &(idLexer::buffer[length]);
-
-	idLexer::tokenavailable = 0;
-	idLexer::m_line = startLine;
-	idLexer::lastline = startLine;
-	idLexer::allocated = false;
-	idLexer::loaded = true;
-
-	return true;
+    return m_buffer;
 }
-
-/*
-================
-idLexer::FreeSource
-================
-*/
-void idLexer::FreeSource( void ) {
-#ifdef PUNCTABLE
-	if ( idLexer::punctuationtable && idLexer::punctuationtable != default_punctuationtable ) {
-		Mem_Free( (void *) idLexer::punctuationtable );
-		idLexer::punctuationtable = NULL;
-	}
-	if ( idLexer::nextpunctuation && idLexer::nextpunctuation != default_nextpunctuation ) {
-		Mem_Free( (void *) idLexer::nextpunctuation );
-		idLexer::nextpunctuation = NULL;
-	}
-#endif //PUNCTABLE
-	if ( idLexer::allocated ) {
-		Mem_Free( (void *) idLexer::buffer );
-		idLexer::buffer = NULL;
-		idLexer::allocated = false;
-	}
-	idLexer::tokenavailable = 0;
-	idLexer::token = "";
-	idLexer::loaded = false;
-}
-
-/*
-================
-idLexer::idLexer
-================
-*/
-idLexer::idLexer( void ) {
-	idLexer::loaded = false;
-	idLexer::filename = "";
-	idLexer::flags = 0;
-	idLexer::SetPunctuations( NULL );
-	idLexer::allocated = false;
-	idLexer::fileTime = 0;
-	idLexer::length = 0;
-	idLexer::m_line = 0;
-	idLexer::lastline = 0;
-	idLexer::tokenavailable = 0;
-	idLexer::token = "";
-	idLexer::next = NULL;
-	idLexer::hadError = false;
-}
-
-/*
-================
-idLexer::idLexer
-================
-*/
-idLexer::idLexer( int flags ) {
-	idLexer::loaded = false;
-	idLexer::filename = "";
-	idLexer::flags = flags;
-	idLexer::SetPunctuations( NULL );
-	idLexer::allocated = false;
-	idLexer::fileTime = 0;
-	idLexer::length = 0;
-	idLexer::m_line = 0;
-	idLexer::lastline = 0;
-	idLexer::tokenavailable = 0;
-	idLexer::token = "";
-	idLexer::next = NULL;
-	idLexer::hadError = false;
-}
-
-/*
-================
-idLexer::idLexer
-================
-*/
-idLexer::idLexer( const char *filename, int flags, bool OSPath ) {
-	idLexer::loaded = false;
-	idLexer::flags = flags;
-	idLexer::SetPunctuations( NULL );
-	idLexer::allocated = false;
-	idLexer::token = "";
-	idLexer::next = NULL;
-	idLexer::hadError = false;
-	idLexer::LoadFile( filename, OSPath );
-}
-
-/*
-================
-idLexer::idLexer
-================
-*/
-idLexer::idLexer( const char *ptr, int length, const char *name, int flags ) {
-	idLexer::loaded = false;
-	idLexer::flags = flags;
-	idLexer::SetPunctuations( NULL );
-	idLexer::allocated = false;
-	idLexer::token = "";
-	idLexer::next = NULL;
-	idLexer::hadError = false;
-	idLexer::LoadMemory( ptr, length, name );
-}
-
-/*
-================
-idLexer::~idLexer
-================
-*/
-idLexer::~idLexer( void ) {
-	idLexer::FreeSource();
-}
-
-/*
-================
-idLexer::SetBaseFolder
-================
-*/
-void idLexer::SetBaseFolder( const char *path ) {
-	idStr::Copynz( baseFolder, path, sizeof( baseFolder ) );
-}
-
-/*
-================
-idLexer::HadError
-================
-*/
-bool idLexer::HadError( void ) const {
-	return hadError;
-}
-

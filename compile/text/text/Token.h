@@ -1,23 +1,19 @@
 #pragma once
 
-enum TokenType
-{
-    TT_Identifier,
-    TT_STRING =					1,		// string
-    TT_LITERAL =				2,		// literal
-    TT_NUMBER =					3,		// number
-    TT_NAME =					4,		// name
-    TT_PUNCTUATION =			5,		// punctuation
-};
+#include <string>
+#include <vector>
 
-// token types
-/*
-#define TT_STRING					1		// string
-#define TT_LITERAL					2		// literal
-#define TT_NUMBER					3		// number
-#define TT_NAME						4		// name
-#define TT_PUNCTUATION				5		// punctuation
-*/
+enum class TokenType
+{
+    Unknown =           0,      // 词法分析器无法分析，暂且认为是合法的c++ token类型。
+    String =			1,		// string    start with "
+    Literal =		    2,		// literal   start with '
+    Number =			3,		// number
+    Identifier =		4,		// name
+    Puncatuation =	    5,		// punctuation
+    Keyword =           6,      // keyword
+    Eof =               7,      // end of file
+};
 
 enum TokenSubType
 {
@@ -40,128 +36,88 @@ enum TokenSubType
     TT_VALUESVALID = 				0x10000,		// set if intvalue and floatvalue are valid
 };
 
-// number sub types
-/*
-#define TT_INTEGER					0x00001		// integer
-#define TT_DECIMAL					0x00002		// decimal number
-#define TT_HEX						0x00004		// hexadecimal number
-#define TT_OCTAL					0x00008		// octal number
-#define TT_BINARY					0x00010		// binary number
-#define TT_LONG						0x00020		// long int
-#define TT_UNSIGNED					0x00040		// unsigned int
-#define TT_FLOAT					0x00080		// floating point number
-#define TT_SINGLE_PRECISION			0x00100		// float
-#define TT_DOUBLE_PRECISION			0x00200		// double
-#define TT_EXTENDED_PRECISION		0x00400		// long double
-#define TT_INFINITE					0x00800		// infinite 1.#INF
-#define TT_INDEFINITE				0x01000		// indefinite 1.#IND
-#define TT_NAN						0x02000		// NaN
-#define TT_IPADDRESS				0x04000		// ip address
-#define TT_IPPORT					0x08000		// ip port
-#define TT_VALUESVALID				0x10000		// set if intvalue and floatvalue are valid
-*/
-
 // string sub type is the length of the string
 // literal sub type is the ASCII code
 // punctuation sub type is the punctuation id
-// name sub type is the length of the name
+// identifier sub type is the length of the name
+
+class idLexer;
 
 class idToken 
 {
     friend class idLexer;
 
 public:
-    int             type;								// token type
-	int				subtype;							// token sub type
-	int				line;								// line in script the token was on
-	int				linesCrossed;						// number of lines crossed in white space before token
-	int				flags;								// token flags, used for recursive defines
+    TokenType       m_type;								// token type
+	int				m_subtype;							// token sub type
+	int				m_line;								// line in script the token was on
+	int				m_linesCrossed;						// number of lines crossed in white space before token
+	int				m_flags;						    // token flags, used for recursive defines
+    std::vector<char>   m_buffer;
 
+					idToken();
+					~idToken();
+					idToken(const idToken&) = delete;
+					idToken& operator=(const idToken&) = delete;
+					idToken(idToken&&) = delete;
+					idToken& operator=(idToken&&) = delete;
+    void            Reset();
     void			AppendCharacter(char a);
     int             Length() const;
+    char            GetCharacter(size_t pos) const;
+    std::string_view AsStringView() const;
+    std::string_view AsTypeStringView() const;
 
-    std::string      m_name;
-    std::vector<char> m_buffer;
+	double			GetDoubleValue();				// double value of TT_NUMBER
+	float			GetFloatValue();				// float value of TT_NUMBER
+	unsigned long	GetUnsignedLongValue();		// unsigned long value of TT_NUMBER
+	int				GetIntValue();				// int value of TT_NUMBER
+	int				WhiteSpaceBeforeToken() const;// returns length of whitespace before token
+	void			ClearTokenWhiteSpace();		// forget whitespace before token
 
-public:
-					idToken( void );
-					idToken( const idToken *token );
-					~idToken( void );
-
-	void			operator=( const idStr& text );
-	void			operator=( const char *text );
-
-	double			GetDoubleValue( void );				// double value of TT_NUMBER
-	float			GetFloatValue( void );				// float value of TT_NUMBER
-	unsigned long	GetUnsignedLongValue( void );		// unsigned long value of TT_NUMBER
-	int				GetIntValue( void );				// int value of TT_NUMBER
-	int				WhiteSpaceBeforeToken( void ) const;// returns length of whitespace before token
-	void			ClearTokenWhiteSpace( void );		// forget whitespace before token
-
-	void			NumberValue( void );				// calculate values for a TT_NUMBER
+	void			NumberValue();				// calculate values for a TT_NUMBER
 
 private:
-	unsigned long	intvalue;							// integer value
-	double			floatvalue;							// floating point value
-	const char *	whiteSpaceStart_p;					// start of white space before token, only used by idLexer
-	const char *	whiteSpaceEnd_p;					// end of white space before token, only used by idLexer
-	idToken *		next;								// next token in chain, only used by idParser
-
-	void			AppendDirty( const char a );		// append character without adding trailing zero
+	unsigned long	m_intvalue;							// integer value
+	double			m_floatvalue;                       // floating point value
+	const char *	m_whiteSpaceStart_p;                // start of white space before token, only used by idLexer
+	const char *	m_whiteSpaceEnd_p;					// end of white space before token, only used by idLexer
+	idToken *		m_next;								// next token in chain, only used by idParser
 };
 
-ID_INLINE idToken::idToken( void ) {
-}
-
-ID_INLINE idToken::idToken( const idToken *token ) {
-	*this = *token;
-}
-
-ID_INLINE idToken::~idToken( void ) {
-}
-
-ID_INLINE void idToken::operator=( const char *text) {
-	*static_cast<idStr *>(this) = text;
-}
-
-ID_INLINE void idToken::operator=( const idStr& text ) {
-	*static_cast<idStr *>(this) = text;
-}
-
-ID_INLINE double idToken::GetDoubleValue( void ) {
-	if ( type != TT_NUMBER ) {
+inline double idToken::GetDoubleValue() 
+{
+	if (m_type != TokenType::Number) {
 		return 0.0;
 	}
-	if ( !(subtype & TT_VALUESVALID) ) {
+	if ( !(m_subtype & TT_VALUESVALID) ) {
 		NumberValue();
 	}
-	return floatvalue;
+	return m_floatvalue;
 }
 
-ID_INLINE float idToken::GetFloatValue( void ) {
+inline float idToken::GetFloatValue()
+{
 	return (float) GetDoubleValue();
 }
 
-ID_INLINE unsigned long	idToken::GetUnsignedLongValue( void ) {
-	if ( type != TT_NUMBER ) {
+inline unsigned long idToken::GetUnsignedLongValue()
+{
+	if (m_type != TokenType::Number) {
 		return 0;
 	}
-	if ( !(subtype & TT_VALUESVALID) ) {
+	if ( !(m_subtype & TT_VALUESVALID) ) {
 		NumberValue();
 	}
-	return intvalue;
+	return m_intvalue;
 }
 
-ID_INLINE int idToken::GetIntValue( void ) {
+inline int idToken::GetIntValue()
+{
 	return (int) GetUnsignedLongValue();
 }
 
-ID_INLINE int idToken::WhiteSpaceBeforeToken( void ) const {
-	return ( whiteSpaceEnd_p > whiteSpaceStart_p );
+inline int idToken::WhiteSpaceBeforeToken() const
+{
+	return ( m_whiteSpaceEnd_p > m_whiteSpaceStart_p );
 }
-
-ID_INLINE void idToken::AppendDirty( const char a ) {
-	EnsureAlloced( len + 2, true );
-	data[len++] = a;
-}
-
