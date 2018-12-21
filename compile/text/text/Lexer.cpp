@@ -145,6 +145,7 @@ Punctuation g_default_punctuations[] =
 
 idLexer::idLexer()
     : m_buffer()
+    , m_file_name()
     , m_current_p()
     , m_line()
     , m_lastline()
@@ -158,13 +159,14 @@ idLexer::~idLexer()
 {
 }
 
-int idLexer::LoadFile(const char* filename)
+int idLexer::LoadFile(const char* full_path)
 {
     File f{};
-    if (!f.Open(filename)) {
-        LOG(warning) << "open file " << filename << " failed";
+    if (!f.Open(full_path)) {
+        LOG(warning) << "open file " << full_path << " failed";
         return 0;
     }
+    m_file_name = f.FileName();
 
     auto length = f.Length();
     m_buffer.resize(length + 1);
@@ -255,6 +257,11 @@ int idLexer::SkipWhiteSpaceAndComment()
 int idLexer::Line() const
 {
     return m_line;
+}
+
+const std::string& idLexer::FileName() const
+{
+    return m_file_name;
 }
 
 int idLexer::ReadToken(idToken* token)
@@ -414,7 +421,7 @@ int idLexer::ReadString(idToken* token, int quote)
             const char* tmpscript_p = m_current_p;
             int tmpline = m_line;
 			// read white space between possible two consecutive strings
-			if (!ReadWhiteSpace()) {
+			if (!SkipWhiteSpaceAndComment()) {
 				m_current_p = tmpscript_p;
 				m_line = tmpline;
 				break;

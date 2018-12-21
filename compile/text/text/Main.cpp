@@ -3,6 +3,7 @@
 
 #include "Log.h"
 #include "Lexer.h"
+#include "File.h"
 
 #ifndef AXX
 # define AXX 10
@@ -29,6 +30,18 @@ void testAllToken(idLexer& lexer)
     */
 }
 
+void testFile()
+{
+    try {
+        const char* fpath = "E:\\gitpro\\estl\\compile\\text\\text\\Lexer.h";
+        File f{};
+        f.Open(fpath);
+        LOG(debug) << "filename: " << f.FileName();
+    } catch (std::exception e) {
+        LOG(warning) << "testFile exception: " << e.what();
+    }
+}
+
 int main()
 {
     // 哈哈哈你说呢
@@ -43,7 +56,8 @@ int main()
         LOG(debug) << "load file success";
     }
 
-    testAllToken(lexer);
+    //testAllToken(lexer);
+    testFile();
 
     system("pause");
     return 0;

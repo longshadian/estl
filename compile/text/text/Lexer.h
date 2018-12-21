@@ -88,11 +88,11 @@ public:
 					idLexer(idLexer&&) = delete;
 					idLexer& operator=(idLexer&&) = delete;
 public:
-	int				LoadFile(const char* filename);
+	int				LoadFile(const char* full_path);
     bool            EndOfToken() const;
 	int				GetToken(idToken* token);
     int             Line() const;
-
+    const std::string& FileName() const;
     const std::vector<char> GetBuffer() const;
 
 private:
@@ -109,6 +109,7 @@ private:
 
 private:
     std::vector<char>   m_buffer;
+    std::string         m_file_name;
     const char*         m_current_p;            // current pointer in the script
     int                 m_line;
 	int				    m_lastline;				// line before reading token

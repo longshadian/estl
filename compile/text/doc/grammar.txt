@@ -1,0 +1,95 @@
+
+c++17
+
+Classes文法
+
+class-name:= 
+      identifier
+    | simple-template-id;
+
+class-specifier:= 
+      class-head , "{", member-specification , "}";
+
+class-head:=
+      class-key , [attribute-specifier-seq] , class-head-name [class-virt-specifier] [base-clause]
+    | class-key , [attribute-specifier-seq] , [base-clause]
+
+class-head-name:=
+    [nested-name-specifier] class-name
+
+class-virt-specifier:=
+    "final"
+
+class-key:=
+      "class"
+    | "struct"
+    | "union"
+
+member-specification:=
+      member-declaration [member-specification]
+    | access-specifier ":" [member-specification]
+
+member-declaration:=
+      [attribute-specifier-seq] [decl-specifier-seq] [member-declarator-list] ";"
+    | function-definition
+    | using-declaration
+    | static_assert-declaration
+    | template-declaration
+    | deduction-guide
+    | alias-declaration
+    | empty-declaration
+
+member-declarator-list:=
+      member-declarator
+    | member-declarator-list "," member-declarator
+
+member-declarator:=
+      declarator [virt-specifier-seq] [pure-specifier]
+    | declarator [brace-or-equal-initializer]
+    | [identifier] [attribute-specifier-seq] ":" constant-expression
+
+virt-specifier-seq:=
+      virt-specifier
+    | virt-specifier-seq virt-specifier
+
+virt-specifier:=
+      "override"
+    | "final"
+
+pure-specifier:=
+    "=" "0"
+    
+
+////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////
+Derived classes文法
+
+base-clause:=
+    ":" base-specifier-list
+
+base-specifier-list:=
+      base-specifier
+    | base-specifier-list "," base-specifier
+
+base-specifier:=
+      [attribute-specifier-seq] class-or-decltype
+    | [attribute-specifier-seq] "virtual" [access-specifier] class-or-decltype
+    | [attribute-specifier-seq] access-specifier ["virtual"] class-or-decltype
+
+class-or-decltype:=
+      [nested-name-specifier] class-name
+    | nested-name-specifier "template" simple-template-id
+    | decltype-specifier
+
+access-specifier:=
+      "private"
+    | "protected"
+    | "public"
+
+////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////
+function 文法
+function-definition:=
+    [attribute-specifier-seq] [decl-specifier-seq] declarator [virt-specifier-seq] function-body
