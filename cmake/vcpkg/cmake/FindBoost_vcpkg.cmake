@@ -6,7 +6,7 @@ MESSAGE(STATUS "start find boost_vcpkg vcpkg_root_dir ${VCPKG_ROOT_DIR}")
 MESSAGE(STATUS "start find boost_vcpkg vcpkg_root_include_dir ${VCPKG_ROOT_INCLUDE_DIR}")
 
 
-##[[
+#[[
 MESSAGE(STATUS "xxxxx debug release CMAKE_BUILD_TYPE ${CMAKE_BUILD_TYPE}")
 MESSAGE(STATUS "xxxxx debug release CMAKE_C_FLAGS_DEBUG ${CMAKE_C_FLAGS_DEBUG}")
 MESSAGE(STATUS "xxxxx debug release CMAKE_C_FLAGS_RELEASE ${CMAKE_C_FLAGS_RELEASE}")
@@ -53,16 +53,15 @@ MESSAGE("boost libraries name rule: ${BOOST_LIB_PREFIX}boost_xxx${BOOST_LIB_POST
 ## 添加需要的boost libraries
 SET(BOOST_LIBRARIES_LIST boost_log boost_thread boost_date_time boost_filesystem boost_system)
 
-SET(BOOST_LIBRARIES ""   CACHE STRING "boost libraries")
+#SET(BOOST_LIBRARIES ""   CACHE STRING "boost libraries")
 FOREACH(LIB_NAME ${BOOST_LIBRARIES_LIST})
     SET(BOOST_LIB_NAME "${BOOST_LIB_PREFIX}${LIB_NAME}${BOOST_LIB_POSTFIX}")
     FIND_LIBRARY(${LIB_NAME}_PATH ${BOOST_LIB_NAME} PATHS ${BOOST_LIBRARY_DIR})
-    IF(NOT BOOST_LIB_PATH)
+    IF(NOT BOOST_LIB_NAME)
         MESSAGE(FATAL_ERROR "Can't find  ${BOOST_LIB_NAME} ${BOOST_LIBRARY_DIR}")
     ELSE()
-        MESSAGE(STATUS "find boost lib: ${${LIB_NAME}_PATH} ${BOOST_LIB_NAME}")
+        #MESSAGE("find boost lib: ${${LIB_NAME}_PATH} ${BOOST_LIB_NAME}")
     ENDIF()
-
-    SET(BOOST_LIBRARIES "${BOOST_LIBRARIES} ${${LIB_NAME}_PATH}")
-    
+    SET(BOOST_LIBRARIES ${BOOST_LIBRARIES} ${${LIB_NAME}_PATH})
 ENDFOREACH()
+

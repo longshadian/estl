@@ -40,15 +40,17 @@ def db_insert_click_statistic_total(conn, count, date):
     except MySql.Error as err:
         print(err)
 
+
 def getYesterday():
     today = datetime.date.today()
     oneday = datetime.timedelta(days=1)
     return (today-oneday).isoformat()
 
 def main():
-    #today = datetime.date(2018, 6, 18).isoformat()
-    tm = getYesterday()
+    tm = datetime.date(2018, 8, 12).isoformat()
+    #tm = getYesterday()
 
+    '''
     conn = create_connection(user="root", password="Buzhidao1234", host="114.55.105.106", port=3306, database="gamebox")
     if conn:
         total = db_query_click_statistic(conn, tm)
@@ -66,7 +68,21 @@ def main():
         total = db_query_click_statistic(conn, tm)
         db_insert_click_statistic_total(conn, total, tm)
         conn.close()
+        
+    conn = create_connection(user="root", password="Buzhidao1234", host="114.55.105.106", port=3306, database="gamebox_v2")
+    if conn:
+        total = db_query_click_statistic(conn, tm)
+        db_insert_click_statistic_total(conn, total, tm)
+        conn.close()
+        '''
+    conn = create_connection(user="root", password="Buzhidao1234", host="114.55.105.106", port=3306, database="gamebox_v2_yqwxyx")
+    if conn:
+        total = db_query_click_statistic(conn, tm)
+        db_insert_click_statistic_total(conn, total, tm)
+        conn.close()
 
 if __name__ == "__main__":
     #print(random.randint(10,10000))
-    main()
+    tm = datetime.datetime.today().isoformat(sep=' ')
+    print(tm)
+    #main()

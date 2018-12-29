@@ -5,7 +5,7 @@
 
 enum class TokenType
 {
-    Unknown =           0,      // 词法分析器无法分析，暂且认为是合法的c++ token类型。
+    Unknown =           0,      // 词法分析器无法分析，暂且认为是合法的c++ token
     String =			1,		// string    start with "
     Literal =		    2,		// literal   start with '
     Number =			3,		// number
