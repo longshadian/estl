@@ -1,0 +1,1 @@
+app_id=2015052600090779&biz_content={"total_amount":"0.01","subject":"1","out_trade_no":"IQJZSRC1YMQB5HU"}&charset=utf-8&format=json&method=alipay.trade.app.pay&notify_url=http://domain.merchant.com/payment_notify&sign_type=RSA2&timestamp=2016-08-25 20:26:31&version=1.0

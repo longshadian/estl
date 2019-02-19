@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<conf>
+    <redis>
+        <node id="game">
+            <file id="try_remove_user">./script/evalsha/try_remove_user.lua</file>
+            <file id="save_user_data">./script/evalsha/save_user_data.lua</file>
+            <file id="get_offline_operation">./script/evalsha/get_offline_operation.lua</file>
+        </node>
+        
+        <node id="rank">
+            <file id="save_hall_rank_userinfo">./script/evalsha/save_hall_rank_userinfo.lua</file>
+            <file id="daily_reset_hall_rank">./script/evalsha/daily_reset_hall_rank.lua</file>
+            <file id="clean_hall_rank_userinfo">./script/evalsha/clean_hall_rank_userinfo.lua</file>
+        </node>
+    </redis>
+    
+    <lua>
+        <file>./script/event/user_login.lua</file>
+        <file>./script/event/event_car.lua</file>
+        <file>./script/event/event_ddz.lua</file>
+        <file>./script/event/event_nn.lua</file>
+        <file>./script/event/event_longhu.lua</file>
+        <file>./script/event/event_wheel.lua</file>
+        <file>./script/event/event_hallbbs.lua</file>
+        <file>./script/event/event_mission.lua</file>
+        <file>./script/event/event_lottery.lua</file>
+        <file>./script/event/user_charge.lua</file>
+    </lua>
+</conf>
+
+
+

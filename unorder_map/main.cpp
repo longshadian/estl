@@ -1,6 +1,8 @@
 #include <iostream>
 #include <unordered_map>
 
+namespace x {
+    
 struct UKey
 {
     int m_idx;
@@ -15,12 +17,14 @@ struct UKey
     }
 };
 
+}
+
 namespace std {
 
 template <>
-struct hash<UKey>
+struct hash<x::UKey>
 {
-    std::size_t operator()(const UKey& r) const
+    std::size_t operator()(const x::UKey& r) const
     {
         return r.m_a + r.m_b;
     }
@@ -30,11 +34,11 @@ struct hash<UKey>
 
 int main()
 {
-    std::unordered_map<UKey, int> m;
-    UKey k0 = {0 , 1, 2};
+    std::unordered_map<x::UKey, int> m;
+    x::UKey k0 = {0 , 1, 2};
     m.insert(std::make_pair(k0, 0));
 
-    UKey k1 = {1, 2, 1};
+    x::UKey k1 = {1, 2, 1};
     m.emplace(std::make_pair(k0, 1));
 
     std::cout << m.size() << "\n";

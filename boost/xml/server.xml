@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<conf>
+    <server>
+        <path>/home/cgy/gameserver2/ddzgame2</path>
+        <name>ddzserver2</name>
+        <ip>127.0.0.1</ip>
+        <port>21008</port>
+        <client_timeout>300</client_timeout>
+        <max_connect>1000000</max_connect>
+        <script>./script/conf.json</script>
+        <http_port>8611</http_port>
+    </server>
+    
+    <database>
+        <node id="game">
+            <name>ddzgame</name>
+            <ip>127.0.0.1</ip>
+            <user>root</user>
+            <password>123456</password>
+            <port>3306</port>
+            <charset>utf8</charset>
+        </node>
+    </database>
+    
+    <redis>
+        <node id="game">
+            <ip>127.0.0.1</ip>
+            <port>6857</port>
+        </node>
+        
+        <node id="rank">
+            <ip>127.0.0.1</ip>
+            <port>6859</port>
+        </node>
+    </redis>
+    
+    <rabbitmq>
+        <ip>127.0.0.1</ip>
+        <port>5672</port>
+        <user>root</user>
+        <password>root</password>
+        <exchange>zy.topic</exchange>
+    </rabbitmq>
+</conf>
+
+
+
