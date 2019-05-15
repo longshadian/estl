@@ -1,0 +1,12 @@
+cmake_minimum_required(VERSION 3.0)
+
+ADD_SUBDIRECTORY(bufferstream)
+ADD_SUBDIRECTORY(circular_buffer)
+ADD_SUBDIRECTORY(convert)
+ADD_SUBDIRECTORY(datetime)
+ADD_SUBDIRECTORY(filesystem)
+ADD_SUBDIRECTORY(format)
+ADD_SUBDIRECTORY(interpress)
+ADD_SUBDIRECTORY(program_options)
+ADD_SUBDIRECTORY(signal)
+ADD_SUBDIRECTORY(uuid)
