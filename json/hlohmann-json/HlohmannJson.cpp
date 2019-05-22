@@ -21,21 +21,23 @@ void test()
 		{"list", {1, "aaa", nullptr}},
 		{"object", 
 			{
-				{"currency", "USD"},
+				{"currency", "哈哈哈哈"},
 				{"value", 42.99}
 			}
 		}
 	};
 
-	auto s = j2.dump();
+	auto s = j2.dump(4);
+    std::cout << s << "\n";
 
 	try {
-		auto j3 = json::parse(s);
+        auto j3 = json::parse(s);
 		std::cout << j3["object"]["currency"] << "\n";
 		std::cout << j3["list"][0] << "\n";
 		std::cout << j3["list"][1] << "\n";
 		std::cout << j3["list"][2].is_null() << "\n";
 		std::cout << j3["answer"]["everything"] << "\n";
+		std::cout << "xxxx " << j3["a"].get<int>() << "\n";
 	} catch (const std::exception& e) {
 		std::cout << "parse failed. exception: " << e.what() << "\n";
 	}
@@ -58,8 +60,9 @@ void test2()
 
 int main()
 {
+    system("chcp 65001");
 	//test();
-	test2();
+	test();
 
     return 0;
 }
