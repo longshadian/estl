@@ -1,5 +1,6 @@
 #include <cstdio>
 #include <chrono>
+#include <cassert>
 
 #include "CURLClient.h"
 
@@ -53,6 +54,8 @@ void Test3()
 {
     std::string url = "http://127.0.0.1:10091/download/test/manifest.json";
     HttpDownload http{};
+    std::string s = R"(D:\cmake_builds\libcurl_builds\download\xxx)";
+    assert(http.Init(s));
     http.Launch(url);
 }
 

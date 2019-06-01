@@ -36,12 +36,34 @@ manifest.json
 
 */
 
-struct DownloadPkg
+class DownloadPkg
 {
-    std::string m_name{};
-    std::string m_download_dir{};
-    std::string m_md5{};
-    std::string m_url{};
+public:
+    DownloadPkg() = default;
+    ~DownloadPkg() = default;
+    DownloadPkg(const DownloadPkg&) = delete;
+    DownloadPkg& operator=(const DownloadPkg&) = delete;
+    DownloadPkg(DownloadPkg&&) = delete;
+    DownloadPkg& operator=(DownloadPkg&&) = delete;
+
+    void SetName(std::string s);
+    void SetMd5(std::string s);
+    void SetUrl(std::string s);
+    void SetDownloadDir(std::string s);
+
+    const std::string& GetName() const;
+    const std::string& GetMD5() const;
+    const std::string& GetUrl() const;
+    const std::string& GetDownloadDir() const;
+    const std::vector<std::string>& GetDownloadDirList() const;
+    std::filesystem::path GetDownloadFullPath(std::filesystem::path default_path) const;
+
+private:
+    std::string m_name;
+    std::string m_md5;
+    std::string m_url;
+    std::string m_download_dir;
+    std::vector<std::string> m_dir_list;
 };
 
 struct Manifest
@@ -53,13 +75,13 @@ class HttpDownload
 {
 public:
     HttpDownload();
-    explicit HttpDownload(std::string root_path);
     ~HttpDownload();
     HttpDownload(const HttpDownload&) = delete;
     HttpDownload& operator=(const HttpDownload&) = delete;
     HttpDownload(HttpDownload&&) = delete;
     HttpDownload& operator=(HttpDownload&&) = delete;
 
+    bool Init(std::string root_path);
     void Launch(std::string url);
 
 private:
@@ -69,8 +91,11 @@ private:
     void WriteFile(std::filesystem::path fpath, std::int64_t* total_size, std::uint64_t index, std::vector<std::uint8_t>* buffer, std::size_t length);
     void CloseFile();
 
+    static bool CheckDownloadDir(std::filesystem::path default_path, const DownloadPkg& pkg);
+
 private:
-    std::string                         m_root_path;
+    std::string                         m_default_path_str;
+    std::filesystem::path               m_default_path;
     std::unique_ptr<curl::CurlClient>   m_client;
     std::FILE*                          m_file;
 };

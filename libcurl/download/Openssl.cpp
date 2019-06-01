@@ -98,7 +98,7 @@ std::string MD5(const std::string& path)
     std::uint64_t total = 0;
     while (true) {
         std::size_t readn = std::fread(read_buffer.data(), 1, read_buffer.size(), f);
-        if (readn = 0) {
+        if (readn == 0) {
             break;
         }
         if (readn > read_buffer.size()) {
