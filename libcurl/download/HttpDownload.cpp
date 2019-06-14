@@ -213,7 +213,7 @@ void HttpDownload::WriteFile(std::filesystem::path fpath, std::int64_t* total_si
         auto s = fpath.generic_u8string();
         m_file = std::fopen(s.c_str(), "wb+");
     }
-    if (index > 0 && !m_file) {
+    if (index >= 0 && !m_file) {
         // 打开文件失败，不执行写入操作，清理buffer
         buffer->clear();
         return;
