@@ -8,8 +8,7 @@
 #include "CURLClient.h"
 
 /*
-manifest.json
-
+download.json
 {
 	"download":
 	[
@@ -33,7 +32,6 @@ manifest.json
 		}
 	]
 }
-
 */
 
 class DownloadPkg

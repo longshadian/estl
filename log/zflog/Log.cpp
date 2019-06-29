@@ -4,33 +4,52 @@
 #include <cstdio>
 #include <cstring>
 
-namespace zylib {
+namespace zylib 
+{
 
-ServerLoger::Dir::Dir(std::string log_root, std::string dir_name)
+enum {DEFAUL_BUFFER_LENGTH = 1024 * 4};         // 4K
+enum {MAX_BUFFER_LENGTH = 1024 * 1024 * 1};     // 1MB
+
+
+/**
+ * class record
+ **************************************************************************/
+Record::Record()
+    : m_type(0)
+    , m_dir_name()
+    , m_buffer(DEFAUL_BUFFER_LENGTH, 0)
+{
+}
+
+
+/**
+ * class Sink
+ **************************************************************************/
+Sink::Sink(std::string log_root, std::string dir_name)
     : m_file(nullptr)
     , m_day(0)
     , m_dir_name()
 {
     time_t cur_time = time(NULL);
     struct tm cur_tm;
-    localtimeEx(&cur_time, &cur_tm);
+    LocaltimeEx(&cur_time, &cur_tm);
     m_day = cur_tm.tm_mday;
     m_dir_name = log_root + "/" + dir_name;
     if (m_dir_name.back() != '/')
         m_dir_name.push_back('/');
 }
 
-ServerLoger::Dir::~Dir()
+Sink::~Sink()
 {
     if (m_file)
         ::fclose(m_file);
 }
 
-void ServerLoger::Dir::flush(const char* log_type, const char* log_content, size_t length)
+void Sink::flush(const char* log_type, const char* log_content, size_t length)
 {
     time_t t = time(NULL);
     struct tm cur_tm;
-    localtimeEx(&t, &cur_tm);
+    LocaltimeEx(&t, &cur_tm);
     if (cur_tm.tm_mday != m_day) {
         m_day = cur_tm.tm_mday;
         if (m_file)
@@ -56,16 +75,11 @@ void ServerLoger::Dir::flush(const char* log_type, const char* log_content, size
     }
 }
 
-ServerLoger::LogMessage::LogMessage()
-    : m_type(0)
-    , m_dir_name()
-    , m_buffer(MIN_LOG_MSG_LENGTH, 0)
-{
-}
-
-//////////////////////////////////////////////////////////////////////////
-ServerLoger::ServerLoger() 
-	: m_log_level(LOG_DEBUG | LOG_TIP | LOG_TJ | LOG_ERROR)
+/**
+ * class Logger
+ **************************************************************************/
+Logger::Logger() 
+	: m_log_level(LOG_DEBUG | LOG_INFO | LOG_WARNING | LOG_ERROR)
     , m_running(false)
     , m_thread()
     , m_log_root()
@@ -73,7 +87,7 @@ ServerLoger::ServerLoger()
 {
 }
 
-ServerLoger::~ServerLoger()
+Logger::~Logger()
 {
     m_running = false;
     pushMsg(nullptr);
@@ -81,32 +95,32 @@ ServerLoger::~ServerLoger()
         m_thread.join();
 }
 
-ServerLoger& ServerLoger::getInstance()
+Logger& Logger::Get()
 {
-    static ServerLoger _instance;
+    static Logger _instance;
     return _instance;
 }
 
-void ServerLoger::pushMsg(std::unique_ptr<LogMessage> msg)
+void Logger::pushMsg(std::unique_ptr<Record> msg)
 {
     std::lock_guard<std::mutex> lk(m_mtx);
     m_log_messages.push_back(std::move(msg));
     m_cond.notify_one();
 }
 
-void ServerLoger::setLogLevel(int level)
+void Logger::setLogLevel(int level)
 {
     m_log_level = level;
 }
 
-int ServerLoger::getLogLevel() const
+int Logger::getLogLevel() const
 {
     return m_log_level;
 }
 
-void ServerLoger::run()
+void Logger::StartThread()
 {
-    std::unique_ptr<LogMessage> msg = nullptr;
+    std::unique_ptr<Record> msg = nullptr;
     while(m_running) {
         {
             std::unique_lock<std::mutex> lk(m_mtx);
@@ -118,11 +132,11 @@ void ServerLoger::run()
             continue;
         }
 
-        std::shared_ptr<Dir> app = nullptr;
+        std::shared_ptr<Sink> app = nullptr;
         auto it = m_log_apps.find(msg->m_dir_name);
         if (it == m_log_apps.end()) {
             if (!msg->m_dir_name.empty()) {
-                app = std::make_shared<Dir>(m_log_root, msg->m_dir_name);
+                app = std::make_shared<Sink>(m_log_root, msg->m_dir_name);
                 m_log_apps[msg->m_dir_name] = app;
             }
         } else {
@@ -135,10 +149,10 @@ void ServerLoger::run()
             case LOG_DEBUG:
                 log_type = "DEBUG";
                 break;
-            case LOG_TJ:
+            case LOG_WARNING:
                 log_type = "TJ";
                 break;
-            case LOG_TIP:
+            case LOG_INFO:
                 log_type = "TIP";
                 break;
             case LOG_ERROR:
@@ -157,12 +171,12 @@ void ServerLoger::run()
     }
 }
 
-void ServerLoger::init(std::string path)
+void Logger::init(std::string path)
 {
-    getInstance().start(std::move(path));
+    Get().start(std::move(path));
 }
 
-void ServerLoger::start(std::string path_end_with_sprit)
+void Logger::start(std::string path_end_with_sprit)
 {
     m_log_root = std::move(path_end_with_sprit);
     if (m_log_root.empty())
@@ -171,60 +185,13 @@ void ServerLoger::start(std::string path_end_with_sprit)
         m_log_root.push_back('/');
 
     m_running = true;
-    std::thread temp(std::bind(&ServerLoger::run, this));
+    std::thread temp(std::bind(&Logger::StartThread, this));
     m_thread = std::move(temp);
 }
 
-void ServerLoger::printLogFormat(std::string sub_dir_name, LOG_TYPE log_type, const char* format, ...)
-{
-	if ((ServerLoger::getInstance().getLogLevel() & log_type) == 0)
-		return;
 
-    std::unique_ptr<ServerLoger::LogMessage> log_msg{ new ServerLoger::LogMessage() };
-    log_msg->m_type = log_type;
-    log_msg->m_dir_name = std::move(sub_dir_name);
 
-    va_list va;
-    va_start(va, format);
-    stringPrintf(&log_msg->m_buffer, format, va);
-    va_end(va);
-    ServerLoger::getInstance().pushMsg(std::move(log_msg));
-}
-
-void ServerLoger::stringPrintf(std::vector<char>* output, const char* format, va_list args)
-{
-    size_t remaining = MIN_LOG_MSG_LENGTH;
-    output->resize(MIN_LOG_MSG_LENGTH);
-
-    va_list args_copy;
-    va_copy(args_copy, args);
-    int bytes_used = vsnprintf(output->data(), remaining, format, args_copy);
-    va_end(args_copy);
-    if (bytes_used < 0) {
-        output->clear();
-        return;
-    } else if ((std::vector<char>::size_type)bytes_used < remaining) {
-        output->resize(bytes_used);
-    } else {
-        if (bytes_used + 1 > MAX_LOG_MSG_LENGTH) {
-            output->resize(MAX_LOG_MSG_LENGTH);
-            remaining = MAX_LOG_MSG_LENGTH;
-        } else {
-            output->resize(bytes_used + 1);
-            remaining = bytes_used + 1;
-        }
-
-        va_list args_copy;
-        va_copy(args_copy, args);
-        bytes_used = vsnprintf(output->data(), remaining, format, args_copy);
-        va_end(args_copy);
-        if (bytes_used < 0 ) {
-            output->clear();
-        }
-    }
-}
-
-struct tm* ServerLoger::localtimeEx(const time_t* t, struct tm* output)
+struct tm* LocaltimeEx(const time_t* t, struct tm* output)
 {
 #ifdef WIN32
     localtime_s(output, t);
@@ -234,4 +201,56 @@ struct tm* ServerLoger::localtimeEx(const time_t* t, struct tm* output)
     return output;
 }
 
+void PrintLogFormat(std::string sub_dir_name, LOG_TYPE log_type, const char* format, ...)
+{
+	if ((Logger::Get().getLogLevel() & log_type) == 0)
+		return;
+
+    std::unique_ptr<Record> log_msg(new Record());
+    log_msg->m_type = log_type;
+    log_msg->m_dir_name = std::move(sub_dir_name);
+
+    va_list va;
+    va_start(va, format);
+    StringPrintf(&log_msg->m_buffer, format, va);
+    va_end(va);
+    Logger::Get().pushMsg(std::move(log_msg));
 }
+
+void StringPrintf(std::vector<char>* output, const char* format, va_list args)
+{
+    size_t remaining = DEFAUL_BUFFER_LENGTH;
+    output->resize(DEFAUL_BUFFER_LENGTH);
+
+    va_list args_copy;
+    va_copy(args_copy, args);
+    int bytes_used = vsnprintf(output->data(), remaining, format, args_copy);
+    va_end(args_copy);
+    if (bytes_used < 0) {
+        output->clear();
+        return;
+    }
+
+    if (static_cast<std::size_t>(bytes_used) < remaining) {
+        output->resize(bytes_used);
+        return;
+    }
+
+    if (bytes_used + 1 > MAX_LOG_MSG_LENGTH) {
+        output->resize(MAX_LOG_MSG_LENGTH);
+        remaining = MAX_LOG_MSG_LENGTH;
+    } else {
+        output->resize(bytes_used + 1);
+        remaining = bytes_used + 1;
+    }
+
+    va_list args_copy;
+    va_copy(args_copy, args);
+    bytes_used = vsnprintf(output->data(), remaining, format, args_copy);
+    va_end(args_copy);
+    if (bytes_used < 0 ) {
+        output->clear();
+    }
+}
+
+} // namespace zylib

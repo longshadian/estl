@@ -1,6 +1,6 @@
 #include <iostream>
 
-#include <unistd.h>
+//#include <unistd.h>
 
 #include <array>
 #include <cstdarg>
@@ -29,7 +29,7 @@ void snprintfText()
 
 int main()
 {
-    zylib::ServerLoger::init("/home/cgy/work/test/log/logouts");
+    zylib::Logger::init("/home/cgy/work/test/log/logouts");
     //zylib::ServerLoger::printLogFormat("test", zylib::LOG_DEBUG, "123456789012345678901");
 
     int n = 0;
@@ -39,9 +39,9 @@ int main()
             auto c = std::to_string(i%10);
             s.append(c);
         }
-        zylib::ServerLoger::printLogFormat("test", zylib::LOG_DEBUG, "%s", s.c_str());
+        zylib::Logger::printLogFormat("test", zylib::LOG_DEBUG, "%s", s.c_str());
         ++n;
-        if (n > zylib::ServerLoger::MAX_LOG_MSG_LENGTH) {
+        if (n > zylib::Logger::MAX_LOG_MSG_LENGTH) {
             n = 0;
         }
         std::this_thread::sleep_for(std::chrono::milliseconds(10));

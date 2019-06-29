@@ -52,7 +52,7 @@ int TestGet()
 
 void Test3()
 {
-    std::string url = "http://127.0.0.1:10091/download/test/manifest.json";
+    std::string url = "http://127.0.0.1:10091/download/test/download.json";
     HttpDownload http{};
     std::string s = R"(D:\cmake_builds\libcurl_builds\download\xxx)";
     assert(http.Init(s));
