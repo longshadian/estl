@@ -13,7 +13,7 @@
 #include <vector>
 #include <list>
 
-namespace zylib 
+namespace yzhl
 {
 
 enum LOG_TYPE
@@ -76,5 +76,5 @@ void PrintLogFormat(std::string sub_dir_name, LOG_TYPE log_type, const char* for
 
 void StringPrintf(std::vector<char>* output, const char* format, va_list args);
 
-} //namespace zylib
+} //namespace yzhl
 

@@ -4,11 +4,11 @@
 #include <cstdio>
 #include <cstring>
 
-namespace zylib 
+namespace yzhl
 {
 
-enum {DEFAUL_BUFFER_LENGTH = 1024 * 4};         // 4K
-enum {MAX_BUFFER_LENGTH = 1024 * 1024 * 1};     // 1MB
+enum {DEFAUL_BUFFER_LENGTH = 1024 * 1};         // 1K
+enum {MAX_BUFFER_LENGTH = 1024 * 64  };     	// 64K
 
 
 /**
@@ -253,4 +253,5 @@ void StringPrintf(std::vector<char>* output, const char* format, va_list args)
     }
 }
 
-} // namespace zylib
+} // namespace yzhl
+
