@@ -1,75 +1,94 @@
-
-
-#include <stdio.h>
+#include <zookeeper/zookeeper.h>
 #include <stdlib.h>
+#include <stdio.h>
 #include <string.h>
+#include <signal.h>
 
-#include <thread>
-#include <chrono>
+#include <time.h>
+#include <errno.h>
+#include <assert.h>
+
 #include <iostream>
 #include <string>
+#include <chrono>
+#include <thread>
+#include <sstream>
 
-#include <zookeeper.h>
-#include <zookeeper_log.h>
+bool run = true;
+
+static void sigTerm(int v)
+{
+    std::cout << "xxxxx sigterm\n";
+    run = false;
+}
 
 void QueryServer_watcher_g(zhandle_t* zh, int type, int state, const char* path, void* WATCHER_CTX)
 {
-	if (type == ZOO_SESSION_EVENT) {
-		if (state == ZOO_CONNECTED_STATE) {
-			std::cout << "connected to zookeeper service successfully\n";
-		} else if (state == ZOO_EXPIRED_SESSION_STATE) {
-			std::cout << "connected to zookeeper service expired\n";
-		}
-	}
+    if (type == ZOO_SESSION_EVENT) {
+        if (state == ZOO_CONNECTED_STATE) {
+            std::cout << "connected to zookeeper service successfully " << std::this_thread::get_id() << "\n";
+        } else if (state == ZOO_EXPIRED_SESSION_STATE) {
+            std::cout << "connected to zookeeper service expired " << std::this_thread::get_id() << "\n";
+        }
+    }
 }
 
 void QueryServer_string_completion(int rc, const char* name, const void* data)
 {
-	fprintf(stderr, "[%s]: rc = %d\n", (char*)(data == 0 ? "null" : data), rc);
-	if (!rc) {
-		fprintf(stderr, "\tname = %s\n", name);
-	}
+    std::ostringstream ostm{};
+    ostm << __FUNCTION__ << ":";
+    ostm << "  name: ";
+    if (name)
+        ostm << name;
+    else 
+        ostm << "null";
+    ostm << "  data: ";
+    if (data)
+        ostm << (const char*)data;
+    else
+        ostm << "null";
+    if (!rc) {
+        fprintf(stderr, "\tname = %s\n", name);
+    }
+
+    std::cout << ostm.str() << "  " << std::this_thread::get_id() << "\n";
 }
 
-void QueryServer_accept_query()
+int main(int argc, char **argv) 
 {
-	printf("QueryServer is running...\n");
+    ::signal(SIGTERM, sigTerm);
+    ::signal(SIGINT, sigTerm);
+
+    ::zoo_set_debug_level(ZOO_LOG_LEVEL_WARN);
+    //::zoo_deterministic_conn_order(1); // enable deterministic order
+    std::string hostPort = "127.0.0.1:2181";
+    int32_t timeout = 30000;
+    std::string my_context = "xxxxxxxxa";
+
+    zhandle_t* zh = ::zookeeper_init(hostPort.c_str(), QueryServer_watcher_g, timeout, nullptr
+        , (void*)my_context.data(), 0);
+    if (!zh) {
+        std::cout << "ERROR: zookeeper_init \n";
+        return errno;
+    }
+    int ret = ::zoo_acreate(zh, "/knet/mytest", "alive", 5,
+        &ZOO_OPEN_ACL_UNSAFE, ZOO_EPHEMERAL,
+        QueryServer_string_completion, "zoo_acreate data");
+    if (ret) {
+        fprintf(stderr, "Error %d for %s\n", ret, "acreate");
+        exit(EXIT_FAILURE);
+    }
+
+    do {
+        // 模拟 QueryServer 对外提供服务.
+        // 为了简单起见, 我们在此调用一个简单的函数来模拟 QueryServer.
+        // 然后休眠 5 秒，程序主动退出(即假设此时已经崩溃).
+        std::cout << "sleep " << std::this_thread::get_id() << "\n";
+        std::this_thread::sleep_for(std::chrono::seconds{ 5 });
+    } while (run);
+
+    ::zookeeper_close(zh);
+
+    std::cout << "main exit\n";
+    return 0;
 }
-
-int main(int argc, const char *argv[])
-{
-	const char* host = "127.0.0.1:2181,127.0.0.1:2182,"
-		"127.0.0.1:2183,127.0.0.1:2184,127.0.0.1:2185";
-	int timeout = 30000;
-
-	std::string data = "hello zookeeper";
-
-	zoo_set_debug_level(ZOO_LOG_LEVEL_WARN);
-	zhandle_t* zkhandle = zookeeper_init(host,
-		QueryServer_watcher_g, timeout, 0, &data[0], 0);
-	if (zkhandle == NULL) {
-		fprintf(stderr, "Error when connecting to zookeeper servers...\n");
-		exit(EXIT_FAILURE);
-	}
-
-	// struct ACL ALL_ACL[] = {{ZOO_PERM_ALL, ZOO_ANYONE_ID_UNSAFE}};
-	// struct ACL_vector ALL_PERMS = {1, ALL_ACL};
-	int ret = zoo_acreate(zkhandle, "/QueryServer", "alive", 5,
-		&ZOO_OPEN_ACL_UNSAFE, ZOO_EPHEMERAL,
-		QueryServer_string_completion, "zoo_acreate");
-	if (ret) {
-		fprintf(stderr, "Error %d for %s\n", ret, "acreate");
-		exit(EXIT_FAILURE);
-	}
-
-	do {
-		// 模拟 QueryServer 对外提供服务.
-		// 为了简单起见, 我们在此调用一个简单的函数来模拟 QueryServer.
-		// 然后休眠 5 秒，程序主动退出(即假设此时已经崩溃).
-		QueryServer_accept_query();
-		std::this_thread::sleep_for(std::chrono::seconds{5});
-	} while (false);
-	zookeeper_close(zkhandle);
-	return 0;
-}
-

@@ -1,3 +1,4 @@
+
 #include <unistd.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -5,143 +6,177 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 
-#include <zookeeper.h>
-#include <zookeeper_log.h>
+#include <zookeeper/zookeeper.h>
+//#include <zookeeper_log.h>
 
 #include <iostream>
 #include <string>
+#include <chrono>
+#include <thread>
+#include <sstream>
 
-void QueryServerd_watcher_global(zhandle_t * zh, int type, int state,
-	const char *path, void *watcherCtx);
+bool run = true;
+
+static void sigTerm(int v)
+{
+    std::cout << "xxxxx sigterm\n";
+    run = false;
+}
+
+std::string GetState(int32_t state)
+{
+    if (state == ZOO_EXPIRED_SESSION_STATE)
+         return "ZOO_EXPIRED_SESSION_STATE";
+    else if (state == ZOO_AUTH_FAILED_STATE)
+        return "ZOO_AUTH_FAILED_STATE";
+    else if (state == ZOO_CONNECTING_STATE)
+        return "ZOO_CONNECTING_STATE";
+    else if (state == ZOO_ASSOCIATING_STATE)
+        return "ZOO_ASSOCIATING_STATE";
+    else if (state == ZOO_CONNECTED_STATE)
+        return "ZOO_CONNECTED_STATE";
+    return "unknown state";
+}
+
+std::string GetType(int32_t type)
+{
+    if (type == ZOO_CREATED_EVENT)
+        return "ZOO_CREATED_EVENT";
+    else if (type == ZOO_DELETED_EVENT)
+        return "ZOO_DELETED_EVENT";
+    else if (type == ZOO_CHANGED_EVENT)
+        return "ZOO_CHANGED_EVENT";
+    else if (type == ZOO_CHILD_EVENT)
+        return "ZOO_CHILD_EVENT";
+    else if (type == ZOO_SESSION_EVENT)
+        return "ZOO_SESSION_EVENT";
+    else if (type == ZOO_NOTWATCHING_EVENT)
+        return "ZOO_NOTWATCHING_EVENT";
+    return "unknown type";
+}
+
+
+void QueryServerd_watcher_global(zhandle_t * zh, int type, int state, const char *path, void *watcherCtx);
 //static void QueryServerd_dump_stat(const struct Stat *stat);
-void QueryServerd_stat_completion(int rc, const struct Stat *stat,
-	const void *data);
-void QueryServerd_watcher_awexists(zhandle_t *zh, int type, int state,
-	const char *path, void *watcherCtx);
-static void QueryServerd_awexists(zhandle_t *zh);
+void StatCompletion(int rc, const struct Stat *stat, const void *data);
+void Watcher_awexists(zhandle_t *zh, int type, int state, const char *path, void *watcherCtx);
 
-void
-QueryServerd_watcher_global(zhandle_t * zh, int type, int state,
-	const char *path, void *watcherCtx)
+void Add_awexists(zhandle_t *zh);
+
+void QueryServerd_watcher_global(zhandle_t * zh, int type, int state, const char *path, void *watcherCtx)
 {
-	if (type == ZOO_SESSION_EVENT) {
-		if (state == ZOO_CONNECTED_STATE) {
-			printf("Connected to zookeeper service successfully!\n");
-		}
-		else if (state == ZOO_EXPIRED_SESSION_STATE) {
-			printf("Zookeeper session expired!\n");
-		}
-	}
+    if (type == ZOO_SESSION_EVENT) {
+        if (state == ZOO_CONNECTED_STATE) {
+            printf("Connected to zookeeper service successfully!\n");
+        }
+        else if (state == ZOO_EXPIRED_SESSION_STATE) {
+            printf("Zookeeper session expired!\n");
+        }
+    }
 }
 
-/*
-static void QueryServerd_dump_stat(const struct Stat *stat)
+void StatCompletion(int rc, const struct Stat* stat, const void *data)
 {
-	char tctimes[40];
-	char tmtimes[40];
-	time_t tctime;
-	time_t tmtime;
-
-	if (!stat) {
-		fprintf(stderr, "null\n");
-		return;
-	}
-	tctime = stat->ctime / 1000;
-	tmtime = stat->mtime / 1000;
-
-	ctime_r(&tmtime, tmtimes);
-	ctime_r(&tctime, tctimes);
-
-	fprintf(stderr, "\tctime = %s\tczxid=%llx\n"
-		"\tmtime=%s\tmzxid=%llx\n"
-		"\tversion=%x\taversion=%x\n"
-		"\tephemeralOwner = %llx\n",
-		tctimes, stat->czxid,
-		tmtimes, stat->mzxid,
-		(unsigned int)stat->version, (unsigned int)stat->aversion,
-		stat->ephemeralOwner);
-}
-*/
-
-void
-QueryServerd_stat_completion(int rc, const struct Stat *stat,
-	const void *data)
-{
-	// fprintf(stderr, "%s: rc = %d Stat:\n", (char *) data, rc);
-	// QueryServerd_dump_stat(stat);
+    std::cout << __FUNCTION__ << ": " 
+        << " rc: " << rc
+        << " state: " << " "
+        << " data: " << (const char*)data
+        << "\n";
 }
 
-void
-QueryServerd_watcher_awexists(zhandle_t *zh, int type, int state,
-	const char *path, void *watcherCtx)
+void StringsStatCompletion(int rc, const struct String_vector* strings, const struct Stat *stat, const void *data)
 {
-	if (state == ZOO_CONNECTED_STATE) {
-		if (type == ZOO_DELETED_EVENT) {
-			printf("QueryServer gone away, restart now...\n");
-			// re-exists and set watch on /QueryServer again.
-			QueryServerd_awexists(zh);
-			pid_t pid = fork();
-			if (pid < 0) {
-				fprintf(stderr, "Error when doing fork.\n");
-				exit(EXIT_FAILURE);
-			}
-			if (pid == 0) { /* child process */
-							// ÖØÆô QueryServer ·þÎñ.
-				execl("/tmp/QueryServer/QueryServer", "QueryServer", NULL);
-				exit(EXIT_SUCCESS);
-			}
-			sleep(1); /* sleep 1 second for purpose. */
-		}
-		else if (type == ZOO_CREATED_EVENT) {
-			printf("QueryServer started...\n");
-		}
-	}
+    std::ostringstream ostm{};
+    ostm << "[";
+    for (int i = 0; i != strings->count; ++i) {
+        ostm << (const char*)(strings->data[i]) << " ";
+    }
+    ostm << "]";
 
-	// re-exists and set watch on /QueryServer again.
-	QueryServerd_awexists(zh);
+    std::cout << __FUNCTION__ << ": " 
+        << " rc: " << rc
+        << " state: " << " "
+        << " data: " << (const char*)data
+        << " " << ostm.str()
+        << "\n";
 }
 
-static void
-QueryServerd_awexists(zhandle_t *zh)
+void DataCompletion(int rc, const char *value, int value_len, const struct Stat *stat, const void *data)
 {
-	std::string data = "QueryServerd_awexists.";
-
-	int ret =
-		zoo_awexists(zh, "/QueryServer",
-			QueryServerd_watcher_awexists,
-			&data[0],
-			QueryServerd_stat_completion,
-			"zoo_awexists");
-	if (ret) {
-		fprintf(stderr, "Error %d for %s\n", ret, "aexists");
-		exit(EXIT_FAILURE);
-	}
+    std::cout << __FUNCTION__ << ": " 
+        << " rc: " << rc
+        << " state: " << " "
+        << " data: " << (const char*)data
+        << "\n";
 }
 
-int
-main(int argc, const char *argv[])
+void Watcher_awexists(zhandle_t* zh, int type, int state, const char *path, void *watcherCtx)
 {
-	const char *host = "127.0.0.1:2181,127.0.0.1:2182,"
-		"127.0.0.1:2183,127.0.0.1:2184,127.0.0.1:2185";
-	int timeout = 30000;
-	
-	std::string data = "QueryServerd";
+    std::cout << state << ":" << GetState(state) 
+        << " " << type << ":" << GetType(type)
+        << "\n";
+    std::cout << "trigger watch \n";
+    int n = 5;
+    while (n > 0) {
+        std::cout << "watch sleep " << n << "\n";
+        std::this_thread::sleep_for(std::chrono::seconds{1});
+        --n;
+    }
 
-	zoo_set_debug_level(ZOO_LOG_LEVEL_WARN);
-	zhandle_t *zkhandle = zookeeper_init(host,
-		QueryServerd_watcher_global,
-		timeout,
-		0, &data[0], 0);
-	if (zkhandle == NULL) {
-		fprintf(stderr, "Error when connecting to zookeeper servers...\n");
-		exit(EXIT_FAILURE);
-	}
+    if (state == ZOO_CONNECTED_STATE) {
+        if (type == ZOO_DELETED_EVENT) {
+            printf("knet ZOO_DELETED_EVENT %s\n", path);
+            Add_awexists(zh);
+        } else if (type == ZOO_CREATED_EVENT) {
+            printf("knet ZOO_CREATED_EVENT node %s\n", path);
+        }
+    }
+    // re-exists and set watch on /QueryServer again.
+    Add_awexists(zh);
+}
 
-	QueryServerd_awexists(zkhandle);
-	// Wait for asynchronous zookeeper call done.
-	getchar();
+void Add_awexists(zhandle_t* zh)
+{
+    std::string data = "Add_awexists";
+    int ret = ZOK;
+    //ret = ::zoo_awexists(zh, "/knet/mytest", Watcher_awexists, &data[0], StatCompletion, "StatCompletion");
+    //ret = ::zoo_awget(zh, "/knet", Watcher_awexists, &data[0], DataCompletion, "DataCompletion");
+    ret = ::zoo_awget_children2(zh, "/knet", Watcher_awexists, &data[0], StringsStatCompletion, "StringsStatCompletion");
+    if (ret) {
+        fprintf(stderr, "Error %d for %s\n", ret, "aexists");
+        exit(EXIT_FAILURE);
+    }
+}
 
-	zookeeper_close(zkhandle);
+int main(int argc, const char *argv[])
+{
+    ::signal(SIGTERM, &::sigTerm);
+    ::signal(SIGINT, &::sigTerm);
 
-	return 0;
+
+    const char* host = "127.0.0.1:2181";
+    int timeout = 30000;
+    std::string data = "zookeeper_init";
+
+    ::zoo_set_debug_level(ZOO_LOG_LEVEL_WARN);
+    zhandle_t *zkhandle = ::zookeeper_init(host, QueryServerd_watcher_global,
+        timeout, 0, &data[0], 0);
+    if (zkhandle == NULL) {
+        fprintf(stderr, "Error when connecting to zookeeper servers...\n");
+        exit(EXIT_FAILURE);
+    }
+
+    //zookeeper_interest(zkhandle, nullptr, nullptr, nullptr);
+
+    Add_awexists(zkhandle);
+    // Wait for asynchronous zookeeper call done.
+
+    while (run) {
+        std::this_thread::sleep_for(std::chrono::seconds{1});
+        //std::cout << "sleep...\n";
+    }
+    ::zookeeper_close(zkhandle);
+
+    std::cout << "main exit\n";
+    return 0;
 }
