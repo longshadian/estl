@@ -19,20 +19,27 @@
 namespace bhttp {
 using namespace boost;
 using HttpHandler = std::function<void(beast::http::request<beast::http::string_body>&, beast::http::response<beast::http::string_body>&)>;
-using LogFunc = std::function<void(int, const std::string&)>;
 
-
-enum ELogLevel
+using LogCallback = std::function<void(int, const char* msg)>;
+enum ESeverity
 {
     EDebug      = 0,
     EWarning = 1,
 };
 
-void SetLogFunc(LogFunc func);
+void SetLogCallback(LogCallback func);
 
-void LogDebug(const std::string& content);
-void LogWarning(const std::string& content);
+void LogDebug(const char* fmt, ...)
+#ifdef __GNUC__
+__attribute__((format(printf, 1, 2)))
+#endif
+;
 
+void LogWarning(const char* fmt, ...)
+#ifdef __GNUC__
+__attribute__((format(printf, 1, 2)))
+#endif
+;
 
 class Listener;
 
@@ -82,7 +89,7 @@ ServerError(boost::beast::http::request<RequestBody>& req, boost::beast::string_
 };
 
 
-
+class IOContextPool;
 
 class HttpServer
 {
@@ -106,22 +113,19 @@ public:
     void Reset();
     template<typename Send>
     void HandleRequest(beast::http::request<beast::http::string_body>&& req, Send&& send) const;
-
-private:
-
+    IOContextPool& GetIOContextPool();
 
 private:
     using HandleMap = std::unordered_map<std::string, HttpHandler>;
     std::unordered_map<std::string, HandleMap> m_resourcesMap;
     std::string                     m_host;
     std::uint16_t                   m_port;
-    std::shared_ptr<boost::asio::io_context> m_ioc;
 
-    using WorkGuard = boost::asio::executor_work_guard<boost::asio::io_context::executor_type>;
-    std::shared_ptr<WorkGuard>      m_work_guard;
-
+    //using WorkGuard = boost::asio::executor_work_guard<boost::asio::io_context::executor_type>;
+    //std::shared_ptr<WorkGuard>      m_work_guard;
+    std::shared_ptr<IOContextPool>  m_io_pool;
+    std::shared_ptr<IOContextPool>  m_listener_pool;
     std::shared_ptr<Listener>       m_listener;
-    std::vector<std::thread>        m_thread_pool;
 };
 
 

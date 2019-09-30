@@ -17,31 +17,157 @@
 namespace bhttp {
 using namespace boost;
 
-static void InternalLog(int log_level, const std::string& content)
+LogCallback g_log = nullptr;
+
+static int Vsnprintf(char* buf, std::size_t buflen, const char* format, va_list ap)
+#ifdef __GNUC__
+__attribute__((format(printf, 3, 0)))
+#endif
 {
-    (void)log_level;
-    (void)content;
+    int r;
+    if (!buflen)
+        return 0;
+#if defined(_MSC_VER) || defined(_WIN32)
+    r = _vsnprintf_s(buf, buflen, buflen, format, ap);
+    if (r < 0)
+        r = _vscprintf(format, ap);
+    r = vsnprintf(buf, buflen, format, ap);
+#endif
+    buf[buflen - 1] = '\0';
+    return r;
 }
 
-LogFunc g_Log = &InternalLog;
-
-void SetLogFunc(LogFunc func)
+static void FlushLog(int severity,  const char* msg)
 {
-    if (func)
-        g_Log = std::move(func);
+    if (g_log)
+        g_log(severity, msg);
 }
 
-void LogDebug(const std::string& content)
+static void PrintfLogv(int severity, const char* fmt, va_list ap)
 {
-    if (g_Log)
-        g_Log(ELogLevel::EDebug, content);
+    char buf[1024];
+    if (fmt)
+        Vsnprintf(buf, sizeof(buf), fmt, ap);
+    else
+        buf[0] = '\0';
+    FlushLog(severity, buf);
 }
 
-void LogWarning(const std::string& content)
+void SetLogCallback(LogCallback func)
 {
-    if (g_Log)
-        g_Log(ELogLevel::EWarning, content);
+    g_log = func;
 }
+
+void LogDebug(const char* fmt, ...)
+{
+    va_list ap;
+    va_start(ap, fmt);
+    PrintfLogv(ESeverity::EDebug, fmt, ap);
+    va_end(ap);
+}
+
+void LogWarning(const char* fmt, ...)
+{
+    va_list ap;
+    va_start(ap, fmt);
+    PrintfLogv(ESeverity::EWarning, fmt, ap);
+    va_end(ap);
+}
+
+class IOContext
+{
+public:
+    IOContext(std::int32_t index)
+        : m_index(index)
+        , m_thread()
+        , m_ioctx()
+        , m_work(boost::asio::make_work_guard(m_ioctx))
+    {
+        std::thread temp(std::bind(&IOContext::Run, this));
+        m_thread = std::move(temp);
+    }
+
+    ~IOContext()
+    {
+        m_work.reset();
+        if (!m_ioctx.stopped())
+            m_ioctx.stop();
+        if (m_thread.joinable()) {
+            m_thread.join();
+        }
+    }
+
+    std::int32_t                        m_index;
+    std::thread                         m_thread;
+    boost::asio::io_context             m_ioctx;
+    boost::asio::executor_work_guard<boost::asio::io_context::executor_type> m_work;
+
+    void Stop()
+    {
+        m_work.reset();
+        if (!m_ioctx.stopped())
+            m_ioctx.stop();
+    }
+
+private:
+    void Run()
+    {
+        while (1) {
+            try {
+                m_ioctx.run();
+                LogDebug("io_context: %d stop running", m_index);
+                break;
+            } catch (const std::exception& e) {
+                LogWarning("io_context: %d exception: %s", m_index, e.what());
+                m_ioctx.restart();
+            }
+        }
+    }
+};
+using IOContextPtr = std::shared_ptr<IOContext>;
+
+
+class IOContextPool
+{
+public:
+    IOContextPool()
+        : m_next_index()
+        , m_ioc_vec()
+    {
+    }
+
+    ~IOContextPool()
+    {
+    }
+
+    void Init(std::int32_t count)
+    {
+        if (count <= 0)
+            count = 1;
+        for (std::int32_t i = 0; i != count; ++i) {
+            auto ioctx = std::make_shared<IOContext>(i);
+            m_ioc_vec.emplace_back(ioctx);
+        }
+    }
+
+    void Stop()
+    {
+        m_ioc_vec.clear();
+    }
+
+    IOContextPtr NextIOContext()
+    {
+        if (m_ioc_vec.empty())
+            return nullptr;
+        auto idx = (++m_next_index) % m_ioc_vec.size();
+        return m_ioc_vec[idx];
+    }
+
+private:
+    std::atomic<std::uint64_t>      m_next_index;
+    std::vector<IOContextPtr>       m_ioc_vec;
+};
+
 
 class Session : public std::enable_shared_from_this<Session>
 {
@@ -179,7 +305,7 @@ class Listener : public std::enable_shared_from_this<Listener>
 public:
     Listener(boost::asio::io_context& ioc, boost::asio::ip::tcp::endpoint endpoint, std::shared_ptr<std::string const> const& doc_root, HttpServer& server)
         : ioc_(ioc),
-        acceptor_(boost::asio::make_strand(ioc)),
+        acceptor_(ioc),
         doc_root_(doc_root),
         endpoint_(endpoint),
         http_server_(server)
@@ -205,7 +331,7 @@ public:
         }
         acceptor_.bind(endpoint_, ec);
         if (ec) {
-            LogWarning("http acceptor bind endpoint failed. " + std::to_string(ec.value()) + " "  + ec.message());
+            LogWarning("http acceptor bind endpoint failed. ecode: %d  emsg: %s",  ec.value(), ec.message());
             return false;
         }
 
@@ -214,13 +340,9 @@ public:
             LogWarning("http acceptor listen failed.");
             return false;
         }
-        Run();
-        return true;
-    }
 
-    void Run()
-    {
         DoAccept();
+        return true;
     }
 
     void Shutdown()
@@ -232,8 +354,9 @@ public:
 private:
     void DoAccept()
     {
-        acceptor_.async_accept(boost::asio::make_strand(ioc_),
-            boost::beast::bind_front_handler(&Listener::OnAccept,shared_from_this()));
+        auto ioc = http_server_.GetIOContextPool().NextIOContext();
+        //acceptor_.async_accept(boost::asio::make_strand(ioc->m_ioctx), boost::beast::bind_front_handler(&Listener::OnAccept,shared_from_this()));
+        acceptor_.async_accept(ioc->m_ioctx, boost::beast::bind_front_handler(&Listener::OnAccept,shared_from_this()));
     }
 
     void OnAccept(boost::system::error_code ec, boost::asio::ip::tcp::socket socket)
@@ -256,25 +379,14 @@ HttpServer::HttpServer()
     : m_resourcesMap(),
     m_host(),
     m_port(),
-    m_ioc(),
-    m_work_guard(), 
-    m_listener(),
-    m_thread_pool()
+    m_io_pool(std::make_shared<IOContextPool>()),
+    m_listener_pool(std::make_shared<IOContextPool>()),
+    m_listener()
 {
 }
 
 HttpServer::~HttpServer()
 {
-    if (m_work_guard)
-        m_work_guard->reset();
-    if (m_ioc) {
-        m_ioc->stop();
-    }
-
-    for (auto& t : m_thread_pool) {
-        if (t.joinable())
-            t.join();
-    }
 }
 
 void HttpServer::SetHost(std::string host)
@@ -294,32 +406,17 @@ void HttpServer::AddHttpHandler(const std::string& method, const std::string& pa
 
 bool HttpServer::Init(int N)
 {
-    m_ioc = std::make_shared<boost::asio::io_context>(N);
-    m_work_guard = std::make_shared<WorkGuard>(boost::asio::make_work_guard(*m_ioc));
-
+    m_io_pool->Init(N);
+    m_listener_pool->Init(1);
     auto address = boost::asio::ip::make_address(m_host);
     boost::asio::ip::tcp::endpoint ep{ address, m_port };
-    m_listener = std::make_shared<Listener>(*m_ioc, ep, std::make_shared<std::string>("./"), *this);
+
+    auto ioc = m_listener_pool->NextIOContext();
+    m_listener = std::make_shared<Listener>(ioc->m_ioctx, ep, std::make_shared<std::string>("./"), *this);
 
     if (!m_listener->Init()) {
         LogWarning("listener init failed!");
         return false;
-    }
-
-    m_thread_pool.resize(N);
-    for (int i = 0; i != N; ++i) {
-        m_thread_pool.emplace_back([this]
-        {
-            while (1) {
-                try {
-                    m_ioc->run();
-                    break;
-                } catch (const std::exception& e) {
-                    LogWarning("thread catch exception: " + std::string(e.what()));
-                    m_ioc->restart();
-                }
-            }
-        });
     }
     return true;
 }
@@ -327,8 +424,6 @@ bool HttpServer::Init(int N)
 void HttpServer::Shutdown()
 {
     m_listener->Shutdown();
-    m_work_guard.reset();
-    m_ioc->stop();
 }
 
 void HttpServer::Reset()
@@ -341,15 +436,11 @@ void HttpServer::Reset()
         m_listener->Shutdown();
         m_listener = nullptr;
     }
-    if (m_work_guard) {
-        m_work_guard->reset();
-        m_work_guard = nullptr;
-    }
-    if (m_ioc) {
-        m_ioc->stop();
-        m_ioc = nullptr;
-    }
-    m_thread_pool.clear();
+}
+
+IOContextPool& HttpServer::GetIOContextPool()
+{
+    return *m_io_pool;
 }
 
 } // namespace bhttp
