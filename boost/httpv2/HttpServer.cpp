@@ -1,10 +1,5 @@
 #include "HttpServer.h"
 
-#include <boost/beast/core.hpp>
-#include <boost/beast/http.hpp>
-#include <boost/beast/version.hpp>
-#include <boost/asio/strand.hpp>
-#include <boost/config.hpp>
 #include <algorithm>
 #include <cstdlib>
 #include <functional>
@@ -14,10 +9,21 @@
 #include <thread>
 #include <vector>
 
-namespace bhttp {
-using namespace boost;
+#include <boost/beast/core.hpp>
+#include <boost/beast/http.hpp>
+#include <boost/beast/version.hpp>
+#include <boost/asio/strand.hpp>
+#include <boost/config.hpp>
 
-LogCallback g_log = nullptr;
+namespace bhttp {
+
+static LogCallback g_log = nullptr;
+
+const std::string& BHttpVersion()
+{
+    static const std::string v = "bhttp/0.1";
+    return v;
+}
 
 static int Vsnprintf(char* buf, std::size_t buflen, const char* format, va_list ap)
 #ifdef __GNUC__
@@ -118,7 +124,7 @@ private:
                 LogDebug("io_context: %d stop running", m_index);
                 break;
             } catch (const std::exception& e) {
-                LogWarning("io_context: %d exception: %s", m_index, e.what());
+                LogWarning("io_context: %d exception: %s ... io_context restart", m_index, e.what());
                 m_ioctx.restart();
             }
         }
@@ -152,7 +158,9 @@ public:
 
     void Stop()
     {
-        m_ioc_vec.clear();
+        for (auto& ioc : m_ioc_vec) {
+            ioc->Stop();
+        }
     }
 
     IOContextPtr NextIOContext()
@@ -183,40 +191,39 @@ class Session : public std::enable_shared_from_this<Session>
         }
 
         template<bool isRequest, class Body, class Fields>
-        void operator()(beast::http::message<isRequest, Body, Fields>&& msg) const
+        void operator()(boost::beast::http::message<isRequest, Body, Fields>&& msg) const
         {
             // The lifetime of the message has to extend
             // for the duration of the async operation so
             // we use a shared_ptr to manage it.
-            auto sp = std::make_shared<
-                beast::http::message<isRequest, Body, Fields>>(std::move(msg));
+            auto sp = std::make_shared<boost::beast::http::message<isRequest, Body, Fields>>(std::move(msg));
 
             // Store a type-erased version of the shared
             // pointer in the class to keep it alive.
             self_.res_ = sp;
 
             // Write the response
-            beast::http::async_write(
+            boost::beast::http::async_write(
                 self_.stream_,
                 *sp,
-                beast::bind_front_handler(
+                boost::beast::bind_front_handler(
                     &Session::on_write,
                     self_.shared_from_this(),
                     sp->need_eof()));
         }
     };
 
-    beast::tcp_stream stream_;
-    beast::flat_buffer buffer_;
+    boost::beast::tcp_stream stream_;
+    boost::beast::flat_buffer buffer_;
     std::shared_ptr<std::string const> doc_root_;
-    beast::http::request<beast::http::string_body> req_;
+    boost::beast::http::request<boost::beast::http::string_body> req_;
     std::shared_ptr<void> res_;
     send_lambda lambda_;
     HttpServer& http_server_;
 
 public:
     // Take ownership of the stream
-    Session(asio::ip::tcp::socket&& socket, std::shared_ptr<std::string const> const& doc_root, HttpServer& server)
+    Session(boost::asio::ip::tcp::socket&& socket, std::shared_ptr<std::string const> const& doc_root, HttpServer& server)
         : stream_(std::move(socket))
         , doc_root_(doc_root)
         , lambda_(*this),
@@ -239,18 +246,18 @@ public:
         stream_.expires_after(std::chrono::seconds(30));
 
         // Read a request
-        beast::http::async_read(stream_, buffer_, req_,
-            beast::bind_front_handler(
+        boost::beast::http::async_read(stream_, buffer_, req_,
+            boost::beast::bind_front_handler(
                 &Session::on_read,
                 shared_from_this()));
     }
 
-    void on_read(beast::error_code ec, std::size_t bytes_transferred)
+    void on_read(boost::beast::error_code ec, std::size_t bytes_transferred)
     {
         boost::ignore_unused(bytes_transferred);
 
         // This means they closed the connection
-        if(ec == beast::http::error::end_of_stream)
+        if(ec == boost::beast::http::error::end_of_stream)
             return do_close();
 
         if (ec)
@@ -260,7 +267,7 @@ public:
         http_server_.HandleRequest(std::move(req_), lambda_);
     }
 
-    void on_write(bool close, beast::error_code ec, std::size_t bytes_transferred)
+    void on_write(bool close, boost::beast::error_code ec, std::size_t bytes_transferred)
     {
         boost::ignore_unused(bytes_transferred);
 
@@ -283,8 +290,8 @@ public:
     void do_close()
     {
         // Send a TCP shutdown
-        beast::error_code ec;
-        stream_.socket().shutdown(asio::ip::tcp::socket::shutdown_send, ec);
+        boost::beast::error_code ec;
+        stream_.socket().shutdown(boost::asio::ip::tcp::socket::shutdown_send, ec);
 
         // At this point the connection is closed gracefully
     }
@@ -296,7 +303,6 @@ public:
 
 class Listener : public std::enable_shared_from_this<Listener>
 {
-    boost::asio::io_context&            ioc_;
     boost::asio::ip::tcp::acceptor      acceptor_;
     std::shared_ptr<std::string const>  doc_root_;
     boost::asio::ip::tcp::endpoint      endpoint_;
@@ -304,8 +310,7 @@ class Listener : public std::enable_shared_from_this<Listener>
 
 public:
     Listener(boost::asio::io_context& ioc, boost::asio::ip::tcp::endpoint endpoint, std::shared_ptr<std::string const> const& doc_root, HttpServer& server)
-        : ioc_(ioc),
-        acceptor_(ioc),
+        : acceptor_(ioc),
         doc_root_(doc_root),
         endpoint_(endpoint),
         http_server_(server)
@@ -354,6 +359,9 @@ public:
 private:
     void DoAccept()
     {
+        auto sid = detail::ThreadID();
+        LogDebug("DoAccept thread %s", sid.c_str());
+
         auto ioc = http_server_.GetIOContextPool().NextIOContext();
         //acceptor_.async_accept(boost::asio::make_strand(ioc->m_ioctx), boost::beast::bind_front_handler(&Listener::OnAccept,shared_from_this()));
         acceptor_.async_accept(ioc->m_ioctx, boost::beast::bind_front_handler(&Listener::OnAccept,shared_from_this()));
@@ -404,9 +412,9 @@ void HttpServer::AddHttpHandler(const std::string& method, const std::string& pa
     m_resourcesMap[method][path] = std::move(hdl);
 }
 
-bool HttpServer::Init(int N)
+bool HttpServer::Init(int worker_thread)
 {
-    m_io_pool->Init(N);
+    m_io_pool->Init(worker_thread);
     m_listener_pool->Init(1);
     auto address = boost::asio::ip::make_address(m_host);
     boost::asio::ip::tcp::endpoint ep{ address, m_port };
@@ -424,6 +432,8 @@ bool HttpServer::Init(int N)
 void HttpServer::Shutdown()
 {
     m_listener->Shutdown();
+    m_listener_pool->Stop();
+    m_io_pool->Stop();
 }
 
 void HttpServer::Reset()
@@ -431,7 +441,6 @@ void HttpServer::Reset()
     m_resourcesMap.clear();
     //m_host.clear();
     //m_port = 0;
-
     if (m_listener) {
         m_listener->Shutdown();
         m_listener = nullptr;
@@ -492,3 +501,18 @@ int main(int argc, char* argv[])
     return EXIT_SUCCESS;
 }
 */
+
+
+namespace bhttp {
+namespace detail {
+
+std::string ThreadID()
+{
+    std::ostringstream ostm{};
+    ostm << std::this_thread::get_id();
+    return ostm.str();
+}
+
+} // namespace detail
+} // namespace detail 
+

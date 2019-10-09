@@ -21,10 +21,11 @@ std::string ThreadID()
 void GetName(beast::http::request<beast::http::string_body>& req, beast::http::response<beast::http::string_body>& resp)
 {
     auto s = ThreadID();
-    printf("xxxx %s %d\n", s.c_str(), ++X);
-    resp.body() = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa " ;
+    int v = ++X;
+    printf("xxxx thread:%s %d\n", s.c_str(), v);
+    resp.body() = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa " + std::to_string(v);
     if (X%5 == 0) {
-        throw std::runtime_error("throw exception: " + std::to_string(X));
+        //throw std::runtime_error("throw exception: " + std::to_string(X));
     }
 }
 
@@ -49,7 +50,7 @@ int Test()
     bhttp::HttpServer& server = *pserver;
     server.SetHost("0.0.0.0");
     server.SetPort(8080);
-    if (!server.Init(3)) {
+    if (!server.Init(1)) {
         printf("server init failed.");
         return 0;
     }
@@ -82,7 +83,7 @@ std::shared_ptr<bhttp::HttpServer> CreateHttpServer(std::string host, uint16_t p
         [](int level, const char* content) 
         { 
             std::string s = ThreadID();
-            printf("[%d] [%s]     %s\n", level, s.c_str(), content); 
+            printf("[%d] [thread:%s]     %s\n", level, s.c_str(), content); 
         }
     );
     auto p = std::make_shared<bhttp::HttpServer>();
@@ -115,16 +116,21 @@ void Test2()
     while (1) {
         ++n;
         std::this_thread::sleep_for(std::chrono::seconds{1});
-        printf("sleep %d\n", n);
-        if (n == 60) 
-            break;
+        //printf("sleep %d\n", n);
+        if (n == 20) {
+            printf("http shutdown\n");
+            //p->Shutdown();
+        }
+        if (n == 30) {
+            //break;
+        }
     }
 }
 
 int main(int argc, char* argv[])
 {
     Test2();
-    std::system("pause");
+    //std::system("pause");
     return 0;
 }
 
