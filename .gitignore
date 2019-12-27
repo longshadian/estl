@@ -14,3 +14,10 @@
 
 **/.vscode
 **/.vs
+
+
+*/.vscode/
+.vscode/
+
+*/.vs/
+.vs/
