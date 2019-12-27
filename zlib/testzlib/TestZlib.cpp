@@ -14,6 +14,7 @@ int inf(std::FILE* source, std::FILE* dest)
 {
     int ret;
     unsigned have;
+
     z_stream strm;
     unsigned char in[CHUNK];
     unsigned char out[CHUNK];
