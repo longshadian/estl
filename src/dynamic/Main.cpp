@@ -2,7 +2,7 @@
 #include <vector>
 #include <map>
 
-#include "dynamic.hpp"
+#include "dynamic.h"
 
 int main(int argc, char** argv)
 {
