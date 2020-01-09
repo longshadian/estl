@@ -32,14 +32,6 @@ void fun()
 
 int TestRegex()
 {
-    //fun(); return 0;
-
-    //std::string pattern = R"((\d+)-(\d+)-(\d+) (\d+):(\d+):(\d+)\.(\d+))";
-
-    std::string pattern = R"((\d+)-(\d+)-(\d+) (\d+):(\d+):(\d+)\.(\d+))";
-
-    //std::string pattern = "(\\d+)-(\\d+)-(\\d+)";
-    //std::string pattern = R"xx(\w+)xx";
     try {
         std::string pattern = R"((\d+)-(\d+)-(\d+) (\d+):(\d+):(\d+))";
         std::regex email_regex(pattern);
@@ -57,8 +49,5 @@ int TestRegex()
     } catch (std::regex_error e) {
         std::cout << e.what() << '\t' << e.code() << std::endl;
     }
-
-    std::string s = "123";
-    std::cout << std::atoi(s.c_str()) << "\n";
     return 0;
 }
