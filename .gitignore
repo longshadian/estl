@@ -21,3 +21,7 @@
 
 */.vs/
 .vs/
+
+build/
+*/build/
+**/build/
