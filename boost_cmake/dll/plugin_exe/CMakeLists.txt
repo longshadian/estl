@@ -1,7 +1,6 @@
 cmake_minimum_required(VERSION 3.0)
 project(PluginExe)
 
-MESSAGE(STATUS "CMAKE_PREFIX_PATH: ${CMAKE_PREFIX_PATH}")
 
 SET(OUTPUT_DIR ${CMAKE_BINARY_DIR}/output)
 SET(CMAKE_LIBRARY_OUTPUT_DIRECTORY_DEBUG ${OUTPUT_DIR}/debug/lib)
@@ -11,10 +10,36 @@ SET(CMAKE_LIBRARY_OUTPUT_DIRECTORY_RELEASE ${OUTPUT_DIR}/release/lib)
 SET(CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE ${OUTPUT_DIR}/release/bin)
 SET(CMAKE_ARCHIVE_OUTPUT_DIRECTORY_RELEASE ${OUTPUT_DIR}/release/lib)
 
-FILE(GLOB SRC	./*.cpp ./*.h)
+#FILE(GLOB SRC	./*.cpp ./*.h)
 
-find_package(Boost COMPONENTS filesystem system REQUIRED)
-include_directories(${Boost_INCLUDE_DIRS})
+if(USE_CMAKE)
+    find_package(Boost COMPONENTS filesystem system REQUIRED)
+    include_directories(${Boost_INCLUDE_DIRS})    
+elseif(USE_VCPKG)
+    #### cmake模块
+    set(CMAKE_MODULE_PATH "${CMAKE_HOME_DIRECTORY}/cmake" ${CMAKE_MODULE_PATH})
+    include(Vcpkg)
+    include(VcpkgBoost)
 
-add_executable(PluginExe ${SRC})
+    #### vcpkg 目录
+    set(VCPKG_DIR "c:/vcpkg")
+
+    #### 获取平台目标类型 x86, x64
+    check_platform_size(PLATFORM_TARGET)
+    ## message("platform_type: ${PLATFORM_TARGET}")
+    check_vcpkg_include_dir(${PLATFORM_TARGET} ${VCPKG_DIR} VCPKG_INC_DIR)
+    #message("VCPKG_INC_DIR: ${VCPKG_INC_DIR}")
+    include_directories(${VCPKG_INC_DIR})
+endif()
+
+add_executable(PluginExe Main.cpp Service.h)
+if(USE_CMAKE)
+
+elseif(USE_VCPKG)
+    check_vcpkg_lib_dir(${PLATFORM_TARGET} ${VCPKG_DIR} VCPKG_LIB_DIR)
+    check_vcpkg_boost_lib("boost_filesystem" ${VCPKG_LIB_DIR} BOOST_FILESYSTEM)
+    check_vcpkg_boost_lib("boost_system" ${VCPKG_LIB_DIR} BOOST_SYSTEM)
+
+    set(Boost_LIBRARIES ${BOOST_FILESYSTEM} ${BOOST_SYSTEM})
+endif()
 target_link_libraries(PluginExe PRIVATE ${Boost_LIBRARIES})
