@@ -1,8 +1,8 @@
 cmake_minimum_required(VERSION 3.0)
 set_property(GLOBAL PROPERTY USE_FOLDERS On)
 
-project(Tech)
-set(OUTPUT Tech)
+project(TestSTLSoft)
+set(OUTPUT TestSTLSoft)
 set(OUTPUT_DIR ${CMAKE_BINARY_DIR}/output)
 
 if(WIN32)
@@ -20,28 +20,23 @@ elseif(UNIX)
 endif(WIN32)
 
 
-set(CMAKE_MODULE_PATH
-    #"${CMAKE_HOME_DIRECTORY}/cmake"
-    ${CMAKE_MODULE_PATH}
-    )
+set(CMAKE_MODULE_PATH "${CMAKE_HOME_DIRECTORY}/cmake" ${CMAKE_MODULE_PATH})
 
-#include(Functions)
+include(Functions)
 
-set(TECH_DIR "${CMAKE_HOME_DIRECTORY}/neo/tech")
-auto_sources(SRC_FILES "*.cpp" "RECURSE" "${TECH_DIR}")
-auto_sources(SRC_HFILES "*.h" "RECURSE" "${TECH_DIR}")
-auto_source_group(tech ${TECH_DIR} ${SRC_FILES} ${SRC_HFILES})
+set(SRC_DIR "${CMAKE_HOME_DIRECTORY}/src")
+auto_sources(SRC_FILES "*.cpp" "RECURSE" "${SRC_DIR}")
+auto_sources(SRC_HFILES "*.h" "RECURSE" "${SRC_DIR}")
+auto_source_group(src ${SRC_DIR} ${SRC_FILES} ${SRC_HFILES})
 
-#include_directories(${CMAKE_HOME_DIRECTORY}/neo)
-include_directories(${CMAKE_HOME_DIRECTORY}/neo/tech)
+include_directories("D:/github/STLSoft-1.10/include")
+include_directories(${CMAKE_HOME_DIRECTORY}/src)
 
 if(WIN32)
     add_definitions(/std:c++17)
     add_definitions("/D _WIN32_WINNT=0x0601")
     add_definitions("/D _SILENCE_ALL_CXX17_DEPRECATION_WARNINGS")
     add_definitions("/utf-8")     ### utf-8 no-bom warning C4819: 
-    ## 设置windows 窗口程序
-    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /SUBSYSTEM:WINDOWS")
 
 elseif(UNIX)
     #add_definitions(-g -Wall -Wextra -Werror -std=c++17)
