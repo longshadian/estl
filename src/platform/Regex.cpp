@@ -1,5 +1,6 @@
 #include <regex>
 #include <string>
+#include <array>
 #include <iostream>
 
 
@@ -52,6 +53,85 @@ int CheckYYYYMMDDD()
         return -1;
     }
 }
+
+int fun3()
+{
+    try {
+        std::array<int, 4> arr;
+        std::string pattern = R"(^(\d+)\.(\d+)\.(\d+)\.(\d+)$)";
+        std::regex ipv4_regex(pattern);
+
+        std::vector<std::string> str_vec =
+        {
+            "127.0.0.1",
+            "127.0.0.-1",
+            "127.0.0.10001",
+            "127.0.0001.10001",
+            "10000.a.0.1",
+            "-10000.a.0.1",
+            "10000.0.0.1.1",
+            ".a.0.0.1.1",
+        };
+        for (const auto& s : str_vec) {
+            arr.fill(0);
+            std::smatch results{};
+            if (std::regex_search(s, results, ipv4_regex)) {
+                for (size_t i = 0; i != results.size(); ++i) {
+                    if (i == 0)
+                        continue;
+                    arr[i - 1] = atoi(results[i].str().c_str());
+                }
+                std::cout << "match " << s << " " << arr[0] << " " << arr[1] << " " << arr[2] << " " << arr[3] << "\n";
+            }
+            else {
+                std::cout << "dont match " << s << "\n";
+            }
+        }
+        return 1;
+    }
+    catch (const std::exception & e) {
+        std::cout << "exception: " << e.what() << "\n";
+    }
+    return -1;
+}
+
+int fun4()
+{
+    try {
+        std::array<std::string, 4> arr;
+        std::string pattern = R"(^(\w+|/)\.(\w+)\.(\w+)\.(\w+)$)";
+        std::regex ipv4_regex(pattern);
+
+        std::vector<std::string> str_vec =
+        {
+            "127.0.0.1",
+            "127.0.0.-1",
+            "127.0.0.10001",
+            "127.0.0001.10001",
+        };
+        for (const auto& s : str_vec) {
+            arr.fill("");
+            std::smatch results{};
+            if (std::regex_search(s, results, ipv4_regex)) {
+                for (size_t i = 0; i != results.size(); ++i) {
+                    if (i == 0)
+                        continue;
+                    arr[i - 1] = results[i].str();
+                }
+                std::cout << "match         " << s << "         " << arr[0] << " " << arr[1] << " " << arr[2] << " " << arr[3] << "\n";
+            }
+            else {
+                std::cout << "dont match    " << s << "\n";
+            }
+        }
+        return 1;
+    }
+    catch (const std::exception & e) {
+        std::cout << "exception: " << e.what() << "\n";
+    }
+    return -1;
+}
+
 
 } // namespace test_regex
 
