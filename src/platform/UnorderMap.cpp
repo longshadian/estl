@@ -1,6 +1,9 @@
 #include <iostream>
 #include <unordered_map>
 
+#include "../doctest/doctest.h"
+#include "Common.h"
+
 namespace test_unordermap 
 {
     
@@ -34,7 +37,7 @@ struct hash<test_unordermap::UKey>
 
 } // namespace std
 
-int TestUnorderMap()
+TEST_CASE("TestUnorderMap ")
 {
     std::unordered_map<test_unordermap::UKey, int> m;
     test_unordermap::UKey k0 = {0 , 1, 2};
@@ -44,6 +47,7 @@ int TestUnorderMap()
     m.emplace(std::make_pair(k0, 1));
 
     std::cout << m.size() << "\n";
-
-    return 0;
+    CHECK(1==1);
 }
+
+

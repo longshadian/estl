@@ -2,6 +2,9 @@
 #include <string>
 #include <iostream>
 
+
+#include "Common.h"
+
 namespace test_regex 
 {
 
@@ -27,10 +30,7 @@ void fun()
     }
 }
 
-} // namespace test_regex
-
-
-int TestRegex()
+int CheckYYYYMMDDD()
 {
     try {
         std::string pattern = R"((\d+)-(\d+)-(\d+) (\d+):(\d+):(\d+))";
@@ -46,8 +46,23 @@ int TestRegex()
                 std::cout << "\t\t" << results[i] << "\t" << results[i].length() << "\n";
             }
         }
+        return 0;
     } catch (std::regex_error e) {
-        std::cout << e.what() << '\t' << e.code() << std::endl;
+        WPrintf("exception: code: %d reason: %s", e.code(),  e.what());
+        return -1;
     }
-    return 0;
 }
+
+} // namespace test_regex
+
+
+#include "../doctest/doctest.h"
+#define USE_TEST
+
+#if defined (USE_TEST)
+TEST_CASE("TestRegex NAME")
+{
+    CHECK(test_regex::CheckYYYYMMDDD() == 0);
+}
+
+#endif

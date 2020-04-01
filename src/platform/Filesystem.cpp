@@ -1,14 +1,17 @@
 #include <iostream>
 #include <filesystem>
 
-#if defined (WIN32)
+#include "../doctest/doctest.h"
+#include "Common.h"
+
+#if defined (_MSC_VER)
  #include <windows.h>
 #endif
 
 namespace test_filesystem 
 {
 
-#if defined (WIN32)
+#if defined (_MSC_VER)
 static std::string GetExePath()
 {
     char szFullPath[MAX_PATH];
@@ -35,9 +38,9 @@ static std::string GetStdPath()
     return p.string();
 }
 
-static void Test1()
+static int Test1()
 {
-#if defined (WIN32)
+#if defined (_MSC_VER)
     std::cout << "win32 GetExePath: " << GetExePath() << "\n";
 #endif
 
@@ -55,6 +58,8 @@ static void Test1()
         std::cout << "free: " << s.free/(1024 * 1024) << "\n";
     } else {
     }
+
+    return 0;
 }
 
 static void TestRemove()
@@ -67,15 +72,18 @@ static void TestRemove()
 
 } // namespace test_filesystem
 
-int TestFilesystem()
+//#define USE_TEST
+
+#if defined (USE_TEST)
+TEST_CASE("TestFilesystem")
 {
     try {
         //test_filesystem::Test1();
         test_filesystem::TestRemove();
-        return 1;
     } catch (const std::exception& e) {
         printf("Error: exception: %s\n", e.what());
-        return 0;
+        CHECK(false);
     }
 }
+#endif
 

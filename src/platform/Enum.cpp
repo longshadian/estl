@@ -1,5 +1,9 @@
 #include <iostream>
 
+#define USE_TEST
+
+#include "../doctest/doctest.h"
+
 namespace test_enum
 {
 
@@ -34,13 +38,14 @@ inline operator bool(X x)
 
 } // namespace test_enum
 
-int TestEnum()
+#define USE_TEST
+
+#if defined (USE_TEST)
+TEST_CASE("TestEnum")
 {
     test_enum::X a = test_enum::X::A;
     std::cout << (bool)a << "\n";
     ++a;
-    //std::cout << !a << "\n";
-    std::cout << a << "\n";
-
-    return 0;
+    CHECK((int)a == 2);
 }
+#endif

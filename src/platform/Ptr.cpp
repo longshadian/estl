@@ -37,9 +37,6 @@ struct A
     IntPtr m_p;
 };
 
-} // namespace test_ptr
-
-
 int TestConstPtr()
 {
     test_ptr::A a{12};
@@ -53,4 +50,17 @@ int TestConstPtr()
 
     return 0;
 }
+
+} // namespace test_ptr
+
+#include "../doctest/doctest.h"
+#define USE_TEST
+
+#if defined (USE_TEST)
+TEST_CASE("TestPtr")
+{
+    CHECK(1);
+}
+#endif
+
 

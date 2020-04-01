@@ -1,10 +1,12 @@
 #include <cstdio>
 #include <cstdint>
 
-#if 0
+//#define USE_TEST
+
+#if defined (USE_TEST)
 #include <endian.h>
 
-int main()
+TestCase("test Endian")
 {
     uint64_t h = 0x1122334455667788;
     uint64_t e1 = htole64(h);
