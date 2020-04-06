@@ -1,6 +1,6 @@
 #include <iostream>
 
-#define USE_TEST
+#include "Common.h"
 
 #include "../doctest/doctest.h"
 
@@ -38,11 +38,12 @@ inline operator bool(X x)
 
 } // namespace test_enum
 
-#define USE_TEST
+//#define USE_TEST
 
 #if defined (USE_TEST)
 TEST_CASE("TestEnum")
 {
+    DPrintf("TestEnum");
     test_enum::X a = test_enum::X::A;
     std::cout << (bool)a << "\n";
     ++a;

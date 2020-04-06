@@ -10,7 +10,7 @@
 #else
 #define APrintf(severity, fmt, ...) \
     do { \
-        printf("[%s] [line:%d] " fmt "\n", severity, __LINE__, ##__VA_ARGS__); \
+        printf("[%s] [line:%d] [%s] " fmt "\n", severity, __LINE__, __FILE__, ##__VA_ARGS__); \
     } while (0)
 #endif
 

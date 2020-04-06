@@ -54,7 +54,7 @@ int TestConstPtr()
 } // namespace test_ptr
 
 #include "../doctest/doctest.h"
-#define USE_TEST
+//#define USE_TEST
 
 #if defined (USE_TEST)
 TEST_CASE("TestPtr")
