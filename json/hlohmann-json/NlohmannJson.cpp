@@ -3,6 +3,8 @@
 #include <iostream>
 #include <nlohmann/json.hpp>
 
+#include "../doctest/doctest.h"
+
 using json = nlohmann::json;
 
 void test()
@@ -182,10 +184,24 @@ void testNullEmpty()
     }
 }
 
-int main()
+TEST_CASE("test nlohmann-json")
 {
-    system("chcp 65001");
-    testNullEmpty();
+    std::string str = R"(
+    {
+        "a": {
+            "d": null,
+            "c": 1
+        }
+    }
+    )";
 
-    return 0;
+    try {
+        const json& jroot = json::parse(str);
+        auto sout = jroot.dump();
+        std::cout << sout << "\n";
+    } catch (const std::exception & e) {
+        std::cout << "exception: " << e.what() << "\n";
+        CHECK(false);
+    }
 }
+
