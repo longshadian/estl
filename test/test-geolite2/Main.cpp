@@ -4,7 +4,7 @@
 #include <iostream>
 #include <vector>
 
-#include <maxminddb.h>
+#include <maxminddb/maxminddb.h>
 
 void IPV4_to_Addr(const char* p, IN_ADDR* addr);
 

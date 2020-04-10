@@ -2,7 +2,12 @@
 
 #include <array>
 #include <cstdio>
-#include <boost/filesystem.hpp>
+//#include <boost/filesystem.hpp>
+#include <filesystem>
+
+namespace fs = std::filesystem;
+
+
 #include <zip.h>
 
 #define PrintLog printf
@@ -42,13 +47,13 @@ bool Unzip::Uncompress(std::string zipfile_path, std::string uncompress_path)
 
         try {
             std::string entry_name = stat.name;
-            boost::filesystem::path entry_path(uncompress_path);
+            fs::path entry_path(uncompress_path);
             entry_path = entry_path / entry_name;
             std::string entry_path_str = entry_path.generic_string();
             // TODO 更好的判断目录??
             if (*entry_name.rbegin() == '/') {
-                if (!boost::filesystem::exists(entry_path)) {
-                    if (!boost::filesystem::create_directory(entry_path)) {
+                if (!fs::exists(entry_path)) {
+                    if (!fs::create_directory(entry_path)) {
                         PrintLog("ERROR: create dir: %s failed.\n", entry_path_str.c_str());
                         return false;
                     }

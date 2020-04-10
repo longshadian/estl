@@ -1,20 +1,27 @@
-#include <stdio.h>
-#include <zipconf.h>
-#include <zip.h>
-#include <stdlib.h>
-#include <inttypes.h>
-#include <string.h>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+
 #include <string>
 #include <chrono>
 #include <thread>
-#include <boost/filesystem.hpp>
 #include <iostream>
 #include <array>
+#include <filesystem>
+#include <cassert>
+//#include <boost/filesystem.hpp>
+
+#include <inttypes.h>
+#include <zipconf.h>
+#include <zip.h>
 
 #include "Unzip.h"
 
+
 #define ZIPFILE_NAME  "1.1.zip"
 std::string dest = "D:\\vspro\\test\\libzip\\out\\";
+
+namespace fs = std::filesystem;
 
 void fun()
 {
@@ -121,12 +128,12 @@ void Fun2()
         }
         std::string name = stat.name;
 
-        boost::filesystem::path name_path(root_path);
+        fs::path name_path(root_path);
         name_path = name_path / name;
         // TODO 判断目录
         if (*name.rbegin() == '/') {
-            if (!boost::filesystem::exists(name_path)) {
-                assert(boost::filesystem::create_directory(name_path));
+            if (!fs::exists(name_path)) {
+                assert(fs::create_directory(name_path));
                 printf("start create dir: %s\n", name_path.generic_string().c_str());
             }
         } else {
@@ -169,7 +176,7 @@ void Test3()
     /*
     std::string to = R"(D:\vspro\test\libzip\xx)";
     try {
-        boost::filesystem::copy_directory(boost::filesystem::path(uncompress_path), boost::filesystem::path(to));
+        fs::copy_directory(fs::path(uncompress_path), fs::path(to));
     } catch (const std::exception& e) {
         printf("exception: %s\n", e.what());
     }
@@ -181,7 +188,7 @@ void Test4()
     try {
         std::string from = R"(E:\InternetBar\UpdateClientTool\UpdateSvr\trunk\Debug\1.0.zip)";
         std::string to = R"(C:\Users\admin\Desktop\nginx-1.17.0\nginx-1.17.0\data\download)";
-        boost::filesystem::copy_file(from, to);
+        fs::copy_file(from, to);
     } catch (const std::exception& e) {
         std::cout << "exception: " << e.what() << "\n";
     }
@@ -221,7 +228,7 @@ void Test5()
     try {
         std::string from = R"(E:\InternetBar\UpdateClientTool\UpdateSvr\trunk\Debug\1.0.zip)";
         std::string to = R"(C:\Users\admin\Desktop\nginx-1.17.0\nginx-1.17.0\data\download\1.0.zip)";
-        //boost::filesystem::copy_file(from, to);
+        //fs::copy_file(from, to);
         CopyFile(from, to);
     } catch (const std::exception& e) {
         std::cout << "exception: " << e.what() << "\n";
