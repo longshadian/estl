@@ -25,3 +25,7 @@
 build/
 */build/
 **/build/
+
+out/
+*/out/
+**/out/
