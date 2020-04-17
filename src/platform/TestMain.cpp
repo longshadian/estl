@@ -9,6 +9,11 @@
 int main(int argc, char** argv)
 {
     DPrintf("Test Main argc: %d", argc);
+#ifdef NDEBUG
+    std::cout << "----------------------release\n";
+#else
+    std::cout << "----------------------debug\n";
+#endif
 
     doctest::Context context;
     context.applyCommandLine(argc, argv);
