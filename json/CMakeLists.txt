@@ -1,3 +1,5 @@
 cmake_minimum_required(VERSION 3.0)
 
-add_subdirectory(hlohmann-json)
+project("estl-Json")
+set(CMAKE_MODULE_PATH "${CMAKE_HOME_DIRECTORY}/../cmake")
+add_subdirectory(nlohmann-json)

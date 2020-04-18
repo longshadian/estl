@@ -20,7 +20,7 @@ elseif(UNIX)
 endif(WIN32)
 
 
-set(CMAKE_MODULE_PATH "${CMAKE_HOME_DIRECTORY}/cmake" ${CMAKE_MODULE_PATH})
+#set(CMAKE_MODULE_PATH "${CMAKE_HOME_DIRECTORY}/cmake" ${CMAKE_MODULE_PATH})
 
 include(Functions)
 
