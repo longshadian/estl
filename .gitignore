@@ -12,6 +12,10 @@
 *.la
 *.a
 
+CMakeSettings.json
+*/CMakeSettings.json
+**/CMakeSettings.json
+
 **/.vscode
 **/.vs
 
@@ -25,6 +29,14 @@
 build/
 */build/
 **/build/
+
+build-debug/
+*/build-debug/
+**/build-debug/
+
+build-release/
+*/build-release/
+**/build-release/
 
 out/
 */out/

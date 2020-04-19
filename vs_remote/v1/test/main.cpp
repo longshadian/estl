@@ -1,4 +1,4 @@
-﻿#include <memory>
+#include <memory>
 
 #if defined (__GNUC__)
     #if __GNUC__ < 8
@@ -37,8 +37,19 @@ std::shared_ptr<BoostPlugin> CreatePlugin()
 
 int Test();
 
+void TestUtf8()
+{
+    system("chcp 65001");
+    //int i = "aaa";
+    std::string a = "发发发 ";
+    std::cout << a << "\n";
+}
+
+
 int main(int argc, char** argv) {
     (void)argc; (void)argv;
+    TestUtf8();
+
     LOG_INFO << "plugin path: " << GetPluginPath();
     int i = 0;
     ++i;
