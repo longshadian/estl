@@ -34,10 +34,22 @@ build-debug/
 */build-debug/
 **/build-debug/
 
+build_debug/
+*/build_debug/
+**/build_debug/
+
 build-release/
 */build-release/
 **/build-release/
 
+build_release/
+*/build_release/
+**/build_release/
+
 out/
 */out/
 **/out/
+
+bin/
+*/bin/
+**/bin/
