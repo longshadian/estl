@@ -48,6 +48,10 @@ else()
     message("==============> ${CPPREST}")
 #]]
 
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -std=c++17")
+
+    message("==============> CMAKE_CXX_FLAGS_RELEASE ${CMAKE_CXX_FLAGS_RELEASE}")
+
     target_link_libraries(server ${CPPREST} boost_system crypto ssl)
     #target_link_libraries(server cpprest boost_system crypto ssl)
 endif()

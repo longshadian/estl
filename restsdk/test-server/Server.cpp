@@ -354,7 +354,7 @@ void HttpServer::handle_put(http_request message)
     message.reply(status_codes::OK, rep);
 };
 
-#if defined (_WIN32)
+#if defined (_MSC_VER)
 int TestHttpServer(utility::string_t uri_str)
 #else
 int TestHttpServer(std::string uri_str)
@@ -380,7 +380,7 @@ int TestHttpServer(std::string uri_str)
 
 int main(int argc, char* argv[])
 {
-#if defined (_WIN32)
+#if defined (_MSC_VER)
     utility::string_t host_port(U("http://127.0.0.1:11000"));
     if (TestHttpServer(host_port) != 0) {
 #else
