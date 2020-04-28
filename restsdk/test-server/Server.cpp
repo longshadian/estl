@@ -9,6 +9,13 @@
 #include <cpprest/filestream.h>
 #include <cpprest/http_listener.h>
 
+#if defined(_MSC_VER)
+    //#include <pplx/threadpool.h>
+#else
+    #include <pplx/threadpool.h>
+#endif
+
+
 using namespace utility;                    // Common utilities like string conversions
 using namespace web;                        // Common features like URIs.
 using namespace web::http;                  // Common HTTP functionality
@@ -20,6 +27,12 @@ using namespace std;
 
 class HttpServer;
 std::shared_ptr<HttpServer> g_http_server;
+
+struct ProxyInfo
+{
+    utility::string_t proxy_uri_;
+    utility::string_t proxy_host_;
+};
 
 class HttpServer
 {
@@ -40,8 +53,9 @@ private:
     void handle_delete(http_request message);
     void handle_error(pplx::task<void>& t);
 
-    void handle_get1(http_request message);
-    void handle_get2(http_request message);
+    void handle_get_sync(http_request message);
+    void handle_get_async_file(http_request message);
+    void handle_get_async_buffer(http_request message);
     void handle_get3(http_request message);
 
     http_listener m_listener;
@@ -53,7 +67,7 @@ HttpServer::HttpServer()
 }
 HttpServer::HttpServer(utility::string_t url) :m_listener(url)
 {
-    m_listener.support(methods::GET, std::bind(&HttpServer::handle_get3, this, std::placeholders::_1));
+    m_listener.support(methods::GET, std::bind(&HttpServer::handle_get_async_buffer, this, std::placeholders::_1));
     m_listener.support(methods::PUT, std::bind(&HttpServer::handle_put, this, std::placeholders::_1));
     m_listener.support(methods::POST, std::bind(&HttpServer::handle_post, this, std::placeholders::_1));
     m_listener.support(methods::DEL, std::bind(&HttpServer::handle_delete, this, std::placeholders::_1));
@@ -123,7 +137,7 @@ void HttpServer::handle_get(http_request message)
 
 }
 
-void HttpServer::handle_get1(http_request message)
+void HttpServer::handle_get_sync(http_request message)
 {
     ucout << "absolute_uri: " << message.absolute_uri().to_string() << "\n";
     ucout << "method: " << message.method() << "\n";
@@ -148,65 +162,94 @@ void HttpServer::handle_get1(http_request message)
     }
 };
 
-void HttpServer::handle_get2(http_request message)
+void HttpServer::handle_get_async_file(http_request message)
 {
-    ucout << "absolute_uri: " << message.absolute_uri().to_string() << "\n";
-    ucout << "method: " << message.method() << "\n";
-    ucout << "version: " << message.http_version().to_utf8string().c_str() << "\n";
-
-    ucout << "scheme: " << message.absolute_uri().scheme() << "\n";
-    ucout << "host: " << message.absolute_uri().host() << "\n";
-    ucout << "port: " << message.absolute_uri().port() << "\n";
-
     auto fileStream = std::make_shared<concurrency::streams::ostream>();
-    // Open stream to output file.
-    pplx::task<void> requestTask = concurrency::streams::fstream::open_ostream(U("results.html"))
-    .then([=](concurrency::streams::ostream outFile)
-    {
-        *fileStream = outFile;
-
-        // Create http_client to send the request.
-        http_client client(U("http://purecpp.org/"));
-        // Build request URI and start the request.
-        //uri_builder builder(U("/search")); builder.append_query(U("q"), U("cpprestsdk github"));
-
-        http_request req(message.method());
-        req.set_request_uri(message.request_uri());
-        req.headers() = message.headers();
-        if (req.method() == U("GET") || req.method() == U("HEAD")) {
-        } else {
-            req.set_body(message.body());
-        }
-        return client.request(req);
-    })
-
-    // Handle response headers arriving.
-    .then([=](http_response response)
+    //pplx::task<void> requestTask = concurrency::streams::fstream::open_ostream(U("results.html"))
+    concurrency::streams::fstream::open_ostream(U("results.html"))
+        .then([=](concurrency::streams::ostream outFile)
         {
-            printf("Received response status code:%u\n", response.status_code());
+            *fileStream = outFile;
 
-            // Write response body into the file.
-            message.reply(response);
-            //return response.body().read_to_end(fileStream->streambuf());
+            std::vector<ProxyInfo> vec =
+            {
+                {U("https://www.baidu.com"),       U("www.baidu.com")},
+                {U("https://cn.bing.com"),         U("cn.bing.com")},
+                {U("http://purecpp.org"),          U("purecpp.org")},
+            };
+            const ProxyInfo info = vec[1];
+            ucout << "proxy_uri: " << info.proxy_uri_ << " host: " << info.proxy_host_ << "\n";
+            http_client client(info.proxy_uri_);
+            http_request upstream(message.method());
+            upstream.set_request_uri(message.request_uri());
+            upstream.headers() = message.headers();
+            upstream.headers().remove(U("Host"));
+            upstream.headers().add(U("Host"), info.proxy_host_);
+            return client.request(upstream);
+        })
+
+        .then([=](http_response response)
+        {
+                ucout << "Received response status code: " << response.status_code() << "\n";
+                message.reply(response);
+                //return response.body().read_to_end(fileStream->streambuf());
+        })
+
+        .then([=](pplx::task<void> t)
+        {
+            try {
+                t.wait();
+            } catch (const std::exception & e) {
+                ucout << "Error exception: " << e.what() << "\n";
+            }
         })
     ;
     /*
-    // Close the file stream.
     .then([=](size_t)
         {
             return fileStream->close();
         });
-        */
+    */
+};
 
-    // Wait for all the outstanding I/O to complete and handle any exceptions
-    try
-    {
-        requestTask.wait();
-    }
-    catch (const std::exception & e)
-    {
-        printf("Error exception:%s\n", e.what());
-    }
+void HttpServer::handle_get_async_buffer(http_request message)
+{
+    pplx::create_task([=]()
+        {
+            std::vector<ProxyInfo> vec =
+            {
+                {U("https://www.baidu.com"),       U("www.baidu.com")},
+                {U("https://cn.bing.com"),         U("cn.bing.com")},
+                {U("http://purecpp.org"),          U("purecpp.org")},
+            };
+            const ProxyInfo info = vec[0];
+            ucout << "proxy_uri: " << info.proxy_uri_ << " host: " << info.proxy_host_ << "\n";
+            http_client client(info.proxy_uri_);
+            http_request upstream(message.method());
+            upstream.set_request_uri(message.request_uri());
+            upstream.headers() = message.headers();
+            upstream.headers().remove(U("Host"));
+            upstream.headers().add(U("Host"), info.proxy_host_);
+            return client.request(upstream);
+        })
+
+        .then([=](http_response response)
+        {
+                ucout << "Received response status code: " << response.status_code() << "\n";
+                message.reply(response);
+                //return response.body().read_to_end(fileStream->streambuf());
+        })
+
+        .then([=](pplx::task<void> t)
+        {
+            try {
+                t.wait();
+            } catch (const std::exception & e) {
+                ucout << "Error exception: " << e.what() << "\n";
+                message.reply(web::http::status_codes::InternalError);
+            }
+        })
+    ;
 };
 
 void HttpServer::handle_get3(http_request message)
@@ -230,7 +273,7 @@ void HttpServer::handle_get3(http_request message)
         *fileStream = outFile;
         utility::string_t host1;
         utility::string_t host2;
-        int i = 0;
+        int i = 1;
         if (i == 0) {
             host1 = U("https://www.baidu.com");
             host2 = U("www.baidu.com");
@@ -263,7 +306,7 @@ void HttpServer::handle_get3(http_request message)
     // Handle response headers arriving.
     .then([=](http_response response)
         {
-            //ucout << "Received response status code:" << response.status_code() << "\n";
+            ucout << "Received response status code:" << response.status_code() << "\n";
             //ucout << "\n===========>respone:\n";
             //ucout << response.body() << "\n";
             // Write response body into the file.
@@ -318,6 +361,12 @@ int TestHttpServer(std::string uri_str)
 #endif
 {
     try {
+#if defined(_MSC_VER)
+        //crossplat::threadpool::initialize_with_threads(10);
+#else
+        crossplat::threadpool::initialize_with_threads(10);
+#endif
+
         uri_builder ub(uri_str);
         auto addr = ub.to_uri().to_string();
         g_http_server = std::make_shared<HttpServer>(addr);

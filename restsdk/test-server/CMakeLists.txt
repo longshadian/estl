@@ -28,6 +28,27 @@ elseif(VCPKG_DIR)
     message("CPPREST ${CPPREST}")
     target_link_libraries(server PRIVATE ${CPPREST})
 else()
-    target_link_libraries(server cpprest boost_system crypto ssl)
+    include_directories("/home/cgy/Desktop/github/cpprestsdk/Release/include")
+
+#[[
+    link_directories("/home/cgy/Desktop/github/cpprestsdk/build/Release/Binaries")
+    foreach (dir ${dirs})
+        message(STATUS " link_directories    '${dir}'")
+    endforeach ()
+#]]
+    set(CMAKE_PREFIX_PATH "/home/cgy/Desktop/github/cpprestsdk/build/Release/Binaries")
+    message("==========> CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH}")
+##[[
+    find_library(CPPREST
+          NAMES cpprest
+          #PATH_SUFFIXES lib
+          #PATHS
+            "home/cgy/Desktop/github/cpprestsdk/build/Release/Binaries"
+        )
+    message("==============> ${CPPREST}")
+#]]
+
+    target_link_libraries(server ${CPPREST} boost_system crypto ssl)
+    #target_link_libraries(server cpprest boost_system crypto ssl)
 endif()
 
