@@ -1,10 +1,10 @@
 
 
-int fun();
+void TestStringTokeniser();
 
 int main()
 {
-    fun();
+    TestStringTokeniser();
     return 0;
 }
 
