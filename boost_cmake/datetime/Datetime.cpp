@@ -47,6 +47,32 @@ std::string formatPTime(boost::posix_time::ptime t, const char* fmt)
     }
 }
 
+boost::posix_time::time_duration get_utc_offset() {
+    using namespace boost::posix_time;
+
+    // boost::date_time::c_local_adjustor uses the C-API to adjust a
+    // moment given in utc to the same moment in the local time zone.
+    typedef boost::date_time::c_local_adjustor<ptime> local_adj;
+
+    const ptime utc_now = second_clock::universal_time();
+    const ptime now = local_adj::utc_to_local(utc_now);
+
+    return now - utc_now;
+}
+
+std::string get_utc_offset_string() {
+    std::stringstream out;
+
+    using namespace boost::posix_time;
+    time_facet* tf = new time_facet();
+    tf->time_duration_format("%+%H:%M");
+    out.imbue(std::locale(out.getloc(), tf));
+
+    out << get_utc_offset();
+
+    return out.str();
+}
+
 void printD(boost::gregorian::date d)
 {
     std::cout << "data: " << d << "\n";
@@ -63,7 +89,17 @@ void printTimeDuration(boost::posix_time::time_duration td)
     std::cout << td.fractional_seconds() << "\n";
 }
 
-int main()
+void ios8061(std::time_t t)
+{
+    boost::posix_time::ptime ptime = boost::posix_time::from_time_t(t);
+    printD(ptime.date());
+    printTimeDuration(ptime.time_of_day());
+
+    std::cout << "-----------\n";
+    std::cout << get_utc_offset_string() << "\n";
+}
+
+int fun1()
 {
     std::cout << "universal_time:\n";
     {
@@ -126,4 +162,22 @@ int main()
     }
 
     return 0;
+}
+
+int main()
+{
+    std::time_t t = std::time(nullptr);
+    try {
+        auto pt = boost::date_time::c_local_adjustor<boost::posix_time::ptime>::utc_to_local(boost::posix_time::from_time_t(t));
+        std::ostringstream ostm{};
+        // need new time_facet
+        const char* fmt = "%Y-%m-%d %H:%M:%S";
+        boost::posix_time::time_facet* facet = new boost::posix_time::time_facet(fmt);
+        ostm.imbue(std::locale(std::locale(), facet));
+        ostm << pt;
+        std::cout << ostm.str() << "\n";
+    }
+    catch (...) {
+        return {};
+    }
 }
