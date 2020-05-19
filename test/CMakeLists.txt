@@ -9,4 +9,4 @@ add_subdirectory(test-geolite2)
 add_subdirectory(test-tinyxml2)
 add_subdirectory(test-zlib)
 add_subdirectory(test-libzip)
-
+add_subdirectory(test-enoki)
