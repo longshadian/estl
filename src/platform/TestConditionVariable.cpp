@@ -10,6 +10,7 @@
 #include "Common.h"
 
 #include "../doctest/doctest.h"
+#include "console_log.h"
 
 namespace test_cond
 {
@@ -93,10 +94,11 @@ static int Test1()
 
 } // namespace test_cond
 
-#if 1
+#if 0
 TEST_CASE("TestCondition")
 {
     DPrintf("TestCondition");
+    CONSOLE_PRINT_INFO("TestCondition");
     CHECK(test_cond::Test1() == 0);
 }
 #endif

@@ -28,12 +28,12 @@ public:
     XString(XString&& rhs)
         : m_(std::move(rhs.m_))
     {
-        std::cout << "XString move copy constructor\n";
+        LogInfo << "XString move copy constructor";
     }
 
     XString& operator=(XString&& rhs)
     {
-        std::cout << "XString move assigment constructor\n";
+        LogInfo << "XString move assigment constructor";
         if (this != &rhs) {
             std::swap(m_, rhs.m_);
         }
@@ -114,7 +114,7 @@ int TestMove()
 #if 1
 TEST_CASE("TestMove")
 {
-    DPrintf("TestMove");
+    PrintInfo("TestMove %d", 123);
     CHECK(test_move::TestMove() == 0);
 }
 #endif

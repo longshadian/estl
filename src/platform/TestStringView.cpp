@@ -39,7 +39,7 @@ Matched "Operator `Rx' with parameter `^[\d.:]+$' against variable `REQUEST_HEAD
         auto pb = s.find(b);
         auto pe = s.find(e);
         std::string sv = std::string(substr_by_range(s, pb +b.length(), pe));
-        DPrintf("sv: ==>%s<==", sv.c_str());
+        PrintInfo("sv: ==>%s<==", sv.c_str());
     }
     return 0;
 }

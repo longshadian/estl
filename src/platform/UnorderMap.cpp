@@ -42,7 +42,7 @@ struct hash<test_unordermap::UKey>
 #if defined (USE_TEST)
 TEST_CASE("TestUnorderMap ")
 {
-    DPrintf("TestUnorderMap");
+    PrintInfo("TestUnorderMap");
     std::unordered_map<test_unordermap::UKey, int> m;
     test_unordermap::UKey k0 = {0 , 1, 2};
     m.insert(std::make_pair(k0, 0));

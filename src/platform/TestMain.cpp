@@ -8,7 +8,7 @@
 
 int main(int argc, char** argv)
 {
-    DPrintf("Test Main argc: %d", argc);
+    PrintInfo("Test Main argc: %d", argc);
 #ifdef NDEBUG
     std::cout << "----------------------release\n";
 #else

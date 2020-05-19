@@ -38,11 +38,11 @@ int Test1()
 #if defined (USE_TEST)
 TEST_CASE("test_iterator")
 {
-    DPrintf("test_iterator");
+    PrintInfo("test_iterator");
     try {
         test_iterator::Test1();
     } catch (const std::exception& e) {
-        printf("Error: exception: %s\n", e.what());
+        PrintWarn("Error: exception: %s", e.what());
         CHECK(false);
     }
 }

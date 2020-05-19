@@ -49,7 +49,7 @@ int CheckYYYYMMDDD()
         }
         return 0;
     } catch (std::regex_error e) {
-        WPrintf("exception: code: %d reason: %s", e.code(),  e.what());
+        PrintWarn("exception: code: %d reason: %s", e.code(),  e.what());
         return -1;
     }
 }
