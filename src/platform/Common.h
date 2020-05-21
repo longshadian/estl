@@ -1,5 +1,7 @@
 #pragma once
 
+#include <string>
+
 #include "console_log.h"
 
 #define PrintDebug  CONSOLE_PRINT_DEBUG
@@ -10,3 +12,7 @@
 #define LogInfo     CONSOLE_LOG_INFO
 #define LogWarn     CONSOLE_LOG_WARN
 
+namespace common
+{
+std::string errno_to_string(int eno);
+}

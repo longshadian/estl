@@ -3,6 +3,8 @@
 #include <vector>
 #include <string>
 #include <utility>
+#include <iostream>
+#include <array>
 
 #include "Common.h"
 
@@ -80,16 +82,16 @@ int TestStringView()
     return 0;
 }
 
-
 } // namespace test_string
 
-//#define USE_TEST
+#define USE_TEST
 
 #if defined (USE_TEST)
 TEST_CASE("TestString")
 {
-    DPrintf("TestString");
-    CHECK(test_string::TestHttp() == 0);
-    CHECK(test_string::TestStringView() == 0);
+    PrintInfo("TestString");
+    //CHECK(test_string::TestHttp() == 0);
+    //CHECK(test_string::TestStringView() == 0);
 }
 #endif
+

@@ -3,6 +3,9 @@
 #include <string>
 #include <vector>
 
+#include "../doctest/doctest.h"
+#include "Common.h"
+
 namespace test_misc 
 {
 
@@ -19,10 +22,49 @@ std::chrono::seconds operator "" _s(unsigned long long v)
 }
 
 
-} // namespace test_misc
-
-int TestMisc()
+struct Vector
 {
-    return 0;
+public:
+    float Sum() const
+    {
+        return x + y + z;
+    }
+
+    float Length() const
+    {
+        return x + y + z;
+    }
+
+    float x{.1};
+    float y{.2};
+    float z{.3};
+};
+
+struct Point : public Vector
+{
+public:
+
+    float Length() = delete;
+};
+
+bool Test1()
+{
+    Point p;
+    PrintInfo("p: %f", p.Sum());
+    //PrintInfo("p: %f", p.Length());
+    PrintInfo("p: %f %f %f", p.x, p.y, p.z);
+
+    Vector v = static_cast<Vector>(p);
+    PrintInfo("v: sum %f", v.Sum());
+    PrintInfo("v: length %f", v.Length());
+    return true;
 }
 
+} // namespace test_misc
+
+#if 1
+TEST_CASE("TestMisc")
+{
+    CHECK(test_misc::Test1());
+}
+#endif

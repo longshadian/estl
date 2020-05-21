@@ -25,10 +25,12 @@ void Test()
         4,5,6,
         7,8,9);
     Vector3f v(1,2,3);
-
     std::cout << to_string(m) << "\n";
     std::cout << to_string(v) << "\n";
     std::cout << to_string(m*v) << "\n";
+    v[3];
+
+    printf("%f %f %f\n", v[0], v[1], v[2]);
 }
 
 int main()

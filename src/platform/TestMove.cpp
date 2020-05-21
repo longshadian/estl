@@ -111,7 +111,7 @@ int TestMove()
 
 } // namespace test_move
 
-#if 1
+#if 0
 TEST_CASE("TestMove")
 {
     PrintInfo("TestMove %d", 123);
