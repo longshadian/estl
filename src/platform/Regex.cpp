@@ -31,6 +31,29 @@ void fun()
     }
 }
 
+int fun2()
+{
+    try {
+        std::string prf = "access";
+        std::string pattern = prf + "_(\\d+).log.(\\d+)";
+        std::regex rgx(pattern);
+        std::string s = "access_19090901.log.1";
+
+        std::smatch results{};
+        if (std::regex_search(s, results, rgx)) {
+            for (size_t i = 0; i != results.size(); ++i) {
+                if (i == 0)
+                    continue;
+                LogInfo << "\t" << results[i] << "\t" << results[i].length() << "\n";
+            }
+        }
+        return 0;
+    } catch (const std::regex_error & e) {
+        PrintWarn("exception: code: %d reason: %s", e.code(),  e.what());
+        return -1;
+    }
+}
+
 int CheckYYYYMMDDD()
 {
     try {
@@ -137,12 +160,13 @@ int fun4()
 
 
 #include "../doctest/doctest.h"
-//#define USE_TEST
+#define USE_TEST
 
 #if defined (USE_TEST)
 TEST_CASE("TestRegex NAME")
 {
-    CHECK(test_regex::CheckYYYYMMDDD() == 0);
+    //CHECK(test_regex::CheckYYYYMMDDD() == 0);
+    CHECK(test_regex::fun2() == 0);
 }
 
 #endif
