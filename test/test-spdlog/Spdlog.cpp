@@ -22,7 +22,7 @@ int main()
     console->error("xxxx error");
     console->critical("xxxx critical {}", 123, 123);
     try {
-        spdlog::set_error_handler(std::bind(&ErrMsg, std::placeholders::_1));
+        spdlog::set_error_handler(&ErrMsg);
         spdlog::info("xxdf {} {}", 112);
         spdlog::drop_all();
     }
