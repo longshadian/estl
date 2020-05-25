@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.0)
 set_property(GLOBAL PROPERTY USE_FOLDERS On)
 
 project(TestPlatform)
+#[[
 set(OUTPUT TestPlatform)
 set(OUTPUT_DIR ${CMAKE_BINARY_DIR}/output)
 
@@ -18,13 +19,14 @@ elseif(UNIX)
     set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${OUTPUT_DIR}/lib)
     set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${OUTPUT_DIR}/bin)
 endif(WIN32)
-
+#]]
 
 #set(CMAKE_MODULE_PATH "${CMAKE_HOME_DIRECTORY}/../cmake")
 
 include(Functions)
 
-set(ROOT_DIR "${CMAKE_HOME_DIRECTORY}/platform")
+#set(ROOT_DIR "${CMAKE_HOME_DIRECTORY}/platform")
+set(ROOT_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
 auto_sources(SRC_FILES "*.cpp" "RECURSE" "${ROOT_DIR}")
 auto_sources(SRC_HFILES "*.h" "RECURSE" "${ROOT_DIR}")
 auto_source_group(${PROJECT_NAME} ${ROOT_DIR} ${SRC_FILES} ${SRC_HFILES})
@@ -44,6 +46,6 @@ elseif(UNIX)
     add_definitions(-g -Wall -Wextra  -std=c++17)
 endif()
 
-add_executable(${OUTPUT} ${SRC_FILES} ${SRC_HFILES})
+add_executable(${PROJECT_NAME} ${SRC_FILES} ${SRC_HFILES})
         
 

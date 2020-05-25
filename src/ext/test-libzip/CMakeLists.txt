@@ -1,15 +1,13 @@
 cmake_minimum_required(VERSION 3.0)
-project(Fmt)
-
+project(Libzip)
 
 if(USE_CMAKE)
-	find_package(fmt CONFIG REQUIRED)
-	include_directories(${fmt_INCLUDE_DIRS})
+    find_package(libzip REQUIRED)
 elseif(VCPKG_DIR)
     #### cmake模块
     set(CMAKE_MODULE_PATH "${CMAKE_HOME_DIRECTORY}/cmake" ${CMAKE_MODULE_PATH})
 	include(Vcpkg)
-	include(VcpkgFmt)
+	include(VcpkgLibzip)
 
     #### 获取平台目标类型 x86, x64
     check_platform_size(PLATFORM_TARGET)
@@ -18,18 +16,18 @@ elseif(VCPKG_DIR)
 endif()
 
 if(WIN32)
-	ADD_DEFINITIONS("/std:c++17")
-	ADD_DEFINITIONS("/D _WIN32_WINNT=0x0601")
-	ADD_DEFINITIONS("/D _SILENCE_ALL_CXX17_DEPRECATION_WARNINGS")
-	ADD_DEFINITIONS("/utf-8")     ### utf-8 no-bom warning C4819: 
+	add_definitions("/std:c++17")
+	add_definitions("/D _WIN32_WINNT=0x0601")
+	add_definitions("/D _SILENCE_ALL_CXX17_DEPRECATION_WARNINGS")
+	add_definitions("/utf-8")     ### utf-8 no-bom warning C4819: 
 endif(WIN32)
 
-add_executable(Fmt Fmt.cpp)
-
+add_executable(Libzip Main.cpp Unzip.cpp Unzip.h)
 if(USE_CMAKE)
-	target_link_libraries(Fmt PRIVATE fmt::fmt fmt::fmt-header-only)
+    #target_link_libraries(Libzip PRIVATE ZLIB::ZLIB)
 elseif(VCPKG_DIR)
 	check_vcpkg_lib_dir(${PLATFORM_TARGET} ${VCPKG_DIR} VCPKG_LIB_DIR)
-	check_vcpkg_fmt_lib("fmt" ${VCPKG_LIB_DIR} VCPKG_FMT_LIB)
-	target_link_libraries(Fmt ${VCPKG_FMT_LIB})
+	check_vcpkg_libzip_lib("zip" ${VCPKG_LIB_DIR} VCPKG_LIBZIP_LIB)
+	target_link_libraries(Libzip ${VCPKG_LIBZIP_LIB})
 endif()
+

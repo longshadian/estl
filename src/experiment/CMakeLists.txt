@@ -1,0 +1,27 @@
+cmake_minimum_required(VERSION 3.0)
+
+set(EXPERIMENT_OUTPUT ${CMAKE_BINARY_DIR}/experiment_output)
+if(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
+    set(CMAKE_LIBRARY_OUTPUT_DIRECTORY_DEBUG ${EXPERIMENT_OUTPUT}/debug/lib)
+    set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY_DEBUG ${EXPERIMENT_OUTPUT}/debug/lib)
+    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_DEBUG ${EXPERIMENT_OUTPUT}/debug/bin)
+
+    set(CMAKE_LIBRARY_OUTPUT_DIRECTORY_RELEASE ${EXPERIMENT_OUTPUT}/release/lib)
+    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE ${EXPERIMENT_OUTPUT}/release/bin)
+    set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY_RELEASE ${EXPERIMENT_OUTPUT}/release/lib)
+elseif()
+    set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${EXPERIMENT_OUTPUT}/lib)
+    set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${EXPERIMENT_OUTPUT}/lib)
+    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${EXPERIMENT_OUTPUT}/bin)
+endif()
+#[[
+message("-------------------->CMAKE_SOURCE_DIR      ${CMAKE_SOURCE_DIR}")
+message("-------------------->CMAKE_BINARY_DIR      ${CMAKE_BINARY_DIR}")
+message("-------------------->CMAKE_HOME_DIRECTORY  ${CMAKE_HOME_DIRECTORY}")
+message("-------------------->EXPERIMENT_OUTPUT     ${EXPERIMENT_OUTPUT}")
+#]]
+
+add_subdirectory(platform)
+add_subdirectory(dynamic)
+add_subdirectory(bytebuffer)
+

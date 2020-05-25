@@ -7,7 +7,7 @@ if(USE_CMAKE)
 	#include_directories(${fmt_INCLUDE_DIRS})
 elseif(VCPKG_DIR)
     #### cmake模块
-    set(CMAKE_MODULE_PATH "${CMAKE_HOME_DIRECTORY}/cmake" ${CMAKE_MODULE_PATH})
+    #set(CMAKE_MODULE_PATH "${CMAKE_HOME_DIRECTORY}/cmake" ${CMAKE_MODULE_PATH})
 	include(Vcpkg)
 	include(VcpkgJsoncpp)
 

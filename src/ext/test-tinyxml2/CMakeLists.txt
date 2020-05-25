@@ -1,17 +1,14 @@
 cmake_minimum_required(VERSION 3.0)
-project(Enoki)
+project(Tinyxml2)
 
-
-include_directories("D:/github/enoki/include")
 
 if(USE_CMAKE)
-	find_package(fmt CONFIG REQUIRED)
-	include_directories(${fmt_INCLUDE_DIRS})
+	find_package(tinyxml2 CONFIG REQUIRED)
 elseif(VCPKG_DIR)
     #### cmake模块
     set(CMAKE_MODULE_PATH "${CMAKE_HOME_DIRECTORY}/cmake" ${CMAKE_MODULE_PATH})
 	include(Vcpkg)
-	include(VcpkgFmt)
+	include(VcpkgTinyxml2)
 
     #### 获取平台目标类型 x86, x64
     check_platform_size(PLATFORM_TARGET)
@@ -26,12 +23,12 @@ if(WIN32)
 	ADD_DEFINITIONS("/utf-8")     ### utf-8 no-bom warning C4819: 
 endif(WIN32)
 
-add_executable(Enoki Enoki.cpp)
+add_executable(Tinyxml2 Main.cpp)
 
 if(USE_CMAKE)
-	target_link_libraries(Enoki PRIVATE fmt::fmt fmt::fmt-header-only)
+	target_link_libraries(Tinyxml2 PRIVATE tinyxml2::tinyxml2)
 elseif(VCPKG_DIR)
 	check_vcpkg_lib_dir(${PLATFORM_TARGET} ${VCPKG_DIR} VCPKG_LIB_DIR)
-	check_vcpkg_fmt_lib("fmt" ${VCPKG_LIB_DIR} VCPKG_FMT_LIB)
-	target_link_libraries(Enoki ${VCPKG_FMT_LIB})
+	check_vcpkg_tinyxml2_lib("tinyxml2" ${VCPKG_LIB_DIR} VCPKG_TINYXML2_LIB)
+	target_link_libraries(Tinyxml2 ${VCPKG_TINYXML2_LIB})
 endif()
