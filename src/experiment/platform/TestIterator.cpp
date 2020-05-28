@@ -33,12 +33,11 @@ int Test1()
 
 } // namespace test_iterator
 
-#define USE_TEST
-
+//#define USE_TEST
 #if defined (USE_TEST)
 TEST_CASE("test_iterator")
 {
-    PrintInfo("test_iterator");
+    LogInfo << std::string(__FILE__) << ":";
     try {
         test_iterator::Test1();
     } catch (const std::exception& e) {

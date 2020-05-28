@@ -84,12 +84,12 @@ int TestStringView()
 
 } // namespace test_string
 
-#define USE_TEST
+//#define USE_TEST
 
 #if defined (USE_TEST)
 TEST_CASE("TestString")
 {
-    PrintInfo("TestString");
+    LogInfo << std::string(__FILE__) << ":";
     //CHECK(test_string::TestHttp() == 0);
     //CHECK(test_string::TestStringView() == 0);
 }

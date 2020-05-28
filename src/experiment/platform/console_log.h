@@ -123,16 +123,32 @@ struct FakeLog
     std::string file_;
 };
 
+inline
+const char* file_name(const char* s)
+{
+    std::string_view sv(s);
+    auto pos = sv.rfind('/');
+    if (pos == std::string::npos) {
+        pos = sv.rfind('\\');
+    }
+    if (pos == std::string::npos)
+        return s;
+    return s + pos + 1;
+}
+
 } // namespace console_log
 
-#define CONSOLE_LOG_DEBUG   console_log::FakeLog("DEBUG", __FILE__, __LINE__).Stream()
-#define CONSOLE_LOG_INFO    console_log::FakeLog("INFO ", __FILE__, __LINE__).Stream()
-#define CONSOLE_LOG_WARN    console_log::FakeLog("WARN ", __FILE__, __LINE__).Stream()
-#define CONSOLE_LOG_CRIT    console_log::FakeLog("CRIT ", __FILE__, __LINE__).Stream()
+//#define CONSOLE_LOG_FILE_NAME __FILE__
+#define CONSOLE_LOG_FILE_NAME console_log::file_name(__FILE__)
+
+#define CONSOLE_LOG_DEBUG   console_log::FakeLog("DEBUG", CONSOLE_LOG_FILE_NAME, __LINE__).Stream()
+#define CONSOLE_LOG_INFO    console_log::FakeLog("INFO ", CONSOLE_LOG_FILE_NAME, __LINE__).Stream()
+#define CONSOLE_LOG_WARN    console_log::FakeLog("WARN ", CONSOLE_LOG_FILE_NAME, __LINE__).Stream()
+#define CONSOLE_LOG_CRIT    console_log::FakeLog("CRIT ", CONSOLE_LOG_FILE_NAME, __LINE__).Stream()
 
 #define CONSOLE_PRINT_IMPL(s, fmt, ...) \
     do { \
-        printf("[%s] [%s] [%s:%d] " fmt "\n", console_log::Localtime_YYYYMMDD_HHMMSS_F().c_str(), s, __FILE__,  __LINE__, ##__VA_ARGS__); \
+        printf("[%s] [%s] [%s:%d] " fmt "\n", console_log::Localtime_YYYYMMDD_HHMMSS_F().c_str(), s, CONSOLE_LOG_FILE_NAME,  __LINE__, ##__VA_ARGS__); \
     } while (0)
 
 #define CONSOLE_PRINT_DEBUG(fmt, ...)  CONSOLE_PRINT_IMPL("DEBUG", fmt, ##__VA_ARGS__)

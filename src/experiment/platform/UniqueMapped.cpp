@@ -4,6 +4,8 @@
 #include <ios>
 #include <sstream>
 
+#include "Common.h"
+
 namespace test_uniquemapped
 {
 
@@ -131,7 +133,7 @@ int Test()
         
         uint64_t uid_d = decrypt(uid_e, MAGIC_NUM);
         uint64_t uid_ex = recoverUserID(uid_d);
-        printf("%20lu %20lu %20lu %20lu %20lu\n", uid + i, uid_s, uid_e, uid_d, uid_ex);
+        PrintInfo("%20llu %20llu %20llu %20llu %20llu\n", uid + i, uid_s, uid_e, uid_d, uid_ex);
     }
 
     /*

@@ -62,9 +62,10 @@ bool Test1()
 
 } // namespace test_misc
 
-#if 1
+#if 0
 TEST_CASE("TestMisc")
 {
+    LogInfo << __FILE__;
     CHECK(test_misc::Test1());
 }
 #endif

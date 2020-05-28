@@ -65,12 +65,11 @@ int Test_from_chars()
 
 } // namespace test_string
 
-#define USE_TEST
-
+//#define USE_TEST
 #if defined (USE_TEST)
 TEST_CASE("TestString")
 {
-    PrintInfo("TestString");
+    LogInfo << __FILE__;
     CHECK(test_string_to_number::Test_from_chars() == 0);
 }
 #endif

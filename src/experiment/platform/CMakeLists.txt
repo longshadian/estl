@@ -37,7 +37,8 @@ include_directories(${CMAKE_HOME_DIRECTORY})
 if(WIN32)
     add_definitions(/std:c++17)
     add_definitions("/D _WIN32_WINNT=0x0601")
-    add_definitions("/D _SILENCE_ALL_CXX17_DEPRECATION_WARNINGS")
+    add_definitions("/D _SILENCE_ALL_CXX17_DEPRECATION_WARNINGS=1")
+    add_definitions("/D NOMINMAX=1")
     add_definitions("/utf-8")     ### utf-8 no-bom warning C4819: 
     ## 设置windows 窗口程序
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /SUBSYSTEM:CONSOLE")

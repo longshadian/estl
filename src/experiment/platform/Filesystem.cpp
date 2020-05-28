@@ -62,6 +62,17 @@ static int Test1()
     return 0;
 }
 
+static std::string file_name(std::string s)
+{
+    auto pos = s.rfind('/');
+    if (pos == std::string::npos) {
+        pos = s.rfind('\\');
+    }
+    if (pos == std::string::npos)
+        return s;
+    return s.substr(pos + 1);
+}
+
 static void TestRemove()
 {
     std::string fpath = R"(D:\temp\bb\a.txt)";
@@ -77,6 +88,7 @@ static void TestRemove()
 #if defined (USE_TEST)
 TEST_CASE("TestFilesystem")
 {
+    LogInfo << __FILE__;
     try {
         //test_filesystem::Test1();
         test_filesystem::TestRemove();

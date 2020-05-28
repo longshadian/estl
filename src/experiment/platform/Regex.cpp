@@ -3,8 +3,9 @@
 #include <array>
 #include <iostream>
 
-
 #include "Common.h"
+
+#include "../doctest/doctest.h"
 
 namespace test_regex 
 {
@@ -159,12 +160,12 @@ int fun4()
 } // namespace test_regex
 
 
-#include "../doctest/doctest.h"
-#define USE_TEST
+//#define USE_TEST
 
 #if defined (USE_TEST)
 TEST_CASE("TestRegex NAME")
 {
+    LogInfo << __FILE__;
     //CHECK(test_regex::CheckYYYYMMDDD() == 0);
     CHECK(test_regex::fun2() == 0);
 }
