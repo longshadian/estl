@@ -68,7 +68,7 @@ static bool Test1()
 
     PerformanceTimer pt1;
     PerformanceTimer pt2;
-
+    return true;
 }
 
 } // namespace test_gettimeofday
@@ -77,6 +77,6 @@ static bool Test1()
 TEST_CASE("test_gettimeofday")
 {
     LogInfo << __FILE__;
-    CHECK(test_misc::Test1());
+    CHECK(test_gettimeofday::Test1());
 }
 #endif
