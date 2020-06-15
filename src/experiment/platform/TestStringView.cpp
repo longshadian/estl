@@ -16,7 +16,8 @@ std::string_view substr_by_range(std::string_view sv, std::size_t b, std::size_t
     return sv.substr(b, e-b);
 }
 
-int TestFind()
+static
+void TestFind()
 {
 std::string_view s = R"(
 [client 192.168.106.1] 
@@ -41,18 +42,34 @@ Matched "Operator `Rx' with parameter `^[\d.:]+$' against variable `REQUEST_HEAD
         std::string sv = std::string(substr_by_range(s, pb +b.length(), pe));
         PrintInfo("sv: ==>%s<==", sv.c_str());
     }
-    return 0;
 }
 
+static
+void Test1()
+{
+#if 0
+    // 以下代码会导致编译期出错，string_view不提供变动接口
+    std::string s = "abc";
+    std::string_view sv1 = s;
+    *sv1.begin() = '1';
+#endif
+}
 
 } // namespace test_string_view
 
-//#define USE_TEST
+#define USE_TEST
 
 #if defined (USE_TEST)
 TEST_CASE("TestStringView")
 {
-    DPrintf("TestStringView");
-    CHECK(test_string_view::TestFind() == 0);
+    LogInfo << "test string view";
+    try {
+        test_string_view::TestFind();
+    } catch (const std::exception& e) {
+        LogWarn << e.what();
+        CHECK(false);
+    }
 }
 #endif
+
+
