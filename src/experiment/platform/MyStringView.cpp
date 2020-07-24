@@ -47,7 +47,7 @@ void Test1()
 #if defined (USE_TEST)
 TEST_CASE("test my string view")
 {
-    LogInfo << "test my string view";
+    //LogInfo << "test my string view";
     try {
         test_my_string_view::Test1();
     } catch (const std::exception& e) {

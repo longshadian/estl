@@ -109,13 +109,49 @@ int TestMove()
     return 0;
 }
 
+void Process(const std::string& str)
+{
+    LogInfo << "left value: " << str;
+}
+
+void Process(std::string&& str)
+{
+    LogInfo << "right value: " << str;
+}
+
+template <typename T>
+void DispatchProcess(T&& args)
+{
+    Process(std::forward<T>(args));
+}
+
+void TestMove2()
+{
+    std::string str = "abc";
+    DispatchProcess(str);
+    DispatchProcess(std::move(str));
+}
+
+void Test3()
+{
+    LogInfo << std::is_same_v<std::string, std::decay_t<std::string>>;
+    LogInfo << std::is_same_v<std::string, std::decay_t<std::string&>>;
+    LogInfo << std::is_same_v<std::string, std::decay_t<std::string&&>>;
+    LogInfo << std::is_same_v<std::string, std::decay_t<const std::string>>;
+    LogInfo << std::is_same_v<std::string, std::decay_t<const std::string&>>;
+    LogInfo << std::is_same_v<std::string, std::decay_t<const std::string&&>>;
+}
+
 } // namespace test_move
 
-#if 0
+#if 1
 TEST_CASE("TestMove")
 {
+    using namespace test_move;
     PrintInfo("TestMove %d", 123);
-    CHECK(test_move::TestMove() == 0);
+    CHECK(TestMove() == 0);
+    // TestMove2();
+    // Test3();
 }
 #endif
 

@@ -76,7 +76,7 @@ static bool Test1()
 #if 1
 TEST_CASE("test_gettimeofday")
 {
-    LogInfo << __FILE__;
+    //LogInfo << __FILE__;
     CHECK(test_gettimeofday::Test1());
 }
 #endif

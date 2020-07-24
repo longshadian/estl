@@ -135,7 +135,7 @@ void Test_Map()
 #if defined (USE_TEST)
 TEST_CASE("TestUnorderMap ")
 {
-    LogInfo << __FILE__;
+    //LogInfo << __FILE__;
     // test_unordermap::Test_Map();
     // test_unordermap::Test_Set();
     test_unordermap::Test_Multimap();

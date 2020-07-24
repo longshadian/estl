@@ -48,7 +48,7 @@ static
 void Test1()
 {
 #if 0
-    // ÒÔÏÂ´úÂë»áµ¼ÖÂ±àÒëÆÚ³ö´í£¬string_view²»Ìá¹©±ä¶¯½Ó¿Ú
+    // ä»¥ä¸‹ä»£ç ä¼šå¯¼è‡´ç¼–è¯‘æœŸå‡ºé”™ï¼Œstring_viewä¸æä¾›å˜åŠ¨æ¥å£
     std::string s = "abc";
     std::string_view sv1 = s;
     *sv1.begin() = '1';
@@ -57,7 +57,7 @@ void Test1()
 
 } // namespace test_string_view
 
-#define USE_TEST
+//#define USE_TEST
 
 #if defined (USE_TEST)
 TEST_CASE("TestStringView")
