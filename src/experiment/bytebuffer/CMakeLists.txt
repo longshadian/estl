@@ -27,9 +27,9 @@ include(Functions)
 
 #set(ROOT_DIR "${CMAKE_HOME_DIRECTORY}/bytebuffer")
 set(ROOT_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
-auto_sources(SRC_FILES "*.cpp" "RECURSE" "${ROOT_DIR}")
-auto_sources(SRC_HFILES "*.h" "RECURSE" "${ROOT_DIR}")
-auto_source_group(${PROJECT_NAME} ${ROOT_DIR} ${SRC_FILES} ${SRC_HFILES})
+util_auto_sources(SRC_FILES "*.cpp" "RECURSE" "${ROOT_DIR}")
+util_auto_sources(SRC_HFILES "*.h" "RECURSE" "${ROOT_DIR}")
+util_auto_source_group(${PROJECT_NAME} ${ROOT_DIR} ${SRC_FILES} ${SRC_HFILES})
 
 include_directories(${CMAKE_HOME_DIRECTORY})
 

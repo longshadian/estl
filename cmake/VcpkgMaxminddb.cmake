@@ -1,7 +1,7 @@
 
 #### 获取maxminddb后缀
 #### 暂时只支持x64-windows/x86-windows
-function(check_vcpkg_maxminddb_postfix out_POSTFIX)
+function(vcpkg_find_maxminddb_postfix out_POSTFIX)
     if(CMAKE_BUILD_TYPE MATCHES "Debug")
         set(${out_POSTFIX} "d.lib")
     elseif(CMAKE_BUILD_TYPE MATCHES "Release")
@@ -14,8 +14,8 @@ function(check_vcpkg_maxminddb_postfix out_POSTFIX)
 endfunction()
 
 #### 找到maxminddb库的路径
-function(check_vcpkg_maxminddb_lib LIB_NAME VCPKG_LIB_DIR out_LIB)
-    check_vcpkg_maxminddb_postfix(VCPKG_MMDB_POSTFIX)
+function(vcpkg_find_maxminddb LIB_NAME VCPKG_LIB_DIR out_LIB)
+    vcpkg_find_maxminddb_postfix(VCPKG_MMDB_POSTFIX)
     set(LIB_FULLNAME ${LIB_NAME}${VCPKG_MMDB_POSTFIX})
 
     find_library(${out_LIB} ${LIB_FULLNAME} PATHS ${VCPKG_LIB_DIR})

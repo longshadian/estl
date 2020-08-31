@@ -1,6 +1,6 @@
 
 
-function(auto_sources RETURN_VALUE PATTERN SOURCE_SUBDIRS)
+function(util_auto_sources RETURN_VALUE PATTERN SOURCE_SUBDIRS)
   if ("${SOURCE_SUBDIRS}" STREQUAL "RECURSE")
     SET(PATH ".")
     if (${ARGC} EQUAL 4)
@@ -33,11 +33,11 @@ function(auto_sources RETURN_VALUE PATTERN SOURCE_SUBDIRS)
   endif ()
 
   set(${RETURN_VALUE} ${${RETURN_VALUE}} PARENT_SCOPE)
-endfunction(auto_sources)
+endfunction(util_auto_sources)
 
 
 # Automatically create source_group directives for the sources passed in.
-function(auto_source_group rootName rootDir)
+function(util_auto_source_group rootName rootDir)
   file(TO_CMAKE_PATH "${rootDir}" rootDir)
   string(LENGTH "${rootDir}" rootDirLength)
   set(sourceGroups)
@@ -61,8 +61,19 @@ function(auto_source_group rootName rootDir)
       list(FIND sourceGroups "${fileGroup}" rIdx)
       if (rIdx EQUAL -1)
         list(APPEND sourceGroups "${fileGroup}")
-        source_group("${fileGroup}" REGULAR_EXPRESSION "${filePath}/[^/.]+.(cpp|h|hpp)$")
+        source_group("${fileGroup}" REGULAR_EXPRESSION "${filePath}/[^/.]+.(c|cpp|cxx|cc|h|hpp)$")
       endif()
     endif()
   endforeach()
-endfunction()
+endfunction(util_auto_source_group)
+
+
+## 获取 x64 x86
+function(util_check_platform_size out_ARGV)
+    if(${CMAKE_SIZEOF_VOID_P} STREQUAL "4")
+        set(${out_ARGV} "x86" PARENT_SCOPE)
+    else()
+        set(${out_ARGV} "x64" PARENT_SCOPE)
+    endif()
+endfunction(util_check_platform_size)
+

@@ -15,8 +15,8 @@ elseif(VCPKG_DIR)
     message("VCPKG_DIR: ${VCPKG_DIR}")
 
     #### 获取平台目标类型 x86, x64
-    check_platform_size(PLATFORM_TARGET)
-    check_vcpkg_include_dir(${PLATFORM_TARGET} ${VCPKG_DIR} VCPKG_INC_DIR)
+    util_check_platform_size(PLATFORM_TARGET)
+    vcpkg_find_include_dir(${PLATFORM_TARGET} ${VCPKG_DIR} VCPKG_INC_DIR)
     include_directories(${VCPKG_INC_DIR})
 endif()
 

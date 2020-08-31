@@ -1,6 +1,6 @@
 
 #### 获取jsoncpp后缀 暂时只支持x64-windows/x86-windows
-function(check_vcpkg_jsoncpp_postfix out_POSTFIX)
+function(vcpkg_find_jsoncpp_postfix out_POSTFIX)
     if(CMAKE_BUILD_TYPE MATCHES "Debug")
         set(${out_POSTFIX} ".lib")
     elseif(CMAKE_BUILD_TYPE MATCHES "Release")
@@ -13,8 +13,8 @@ function(check_vcpkg_jsoncpp_postfix out_POSTFIX)
 endfunction()
 
 #### 找到jsoncpp库的路径
-function(check_vcpkg_jsoncpp_lib LIB_NAME VCPKG_LIB_DIR out_LIB)
-    check_vcpkg_jsoncpp_postfix(VCPKG_JSONCPP_POSTFIX)
+function(vcpkg_find_jsoncpp LIB_NAME VCPKG_LIB_DIR out_LIB)
+    vcpkg_find_jsoncpp_postfix(VCPKG_JSONCPP_POSTFIX)
     set(LIB_FULLNAME ${LIB_NAME}${VCPKG_JSONCPP_POSTFIX})
 
     find_library(${out_LIB} ${LIB_FULLNAME} PATHS ${VCPKG_LIB_DIR})

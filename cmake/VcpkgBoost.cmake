@@ -1,7 +1,7 @@
 
 ## 获取vcpkg boost库后缀，例如 boost_fiber-vc140-mt-gd.lib boost_filesystem-vc140-mt.lib
 ## 暂时只支持x64-windows/x86-windows
-function(check_vcpkg_boost_postfix out_POSTFIX)
+function(vcpkg_find_boost_postfix out_POSTFIX)
     if(CMAKE_BUILD_TYPE MATCHES "Debug")
         set(${out_POSTFIX} "-vc140-mt-gd.lib")
     elseif(CMAKE_BUILD_TYPE MATCHES "Release")
@@ -15,10 +15,10 @@ endfunction()
 
 ## 找到boost库的路径
 ## set(VCPKG_LIB_DIR "c:/vcpkg/installed/x64-windows")
-## check_vcpkg_boost_lib("boost_system" ${VCPKG_LIB_DIR} LIB_BOOST_SYSTEM)
+## vcpkg_find_boost("boost_system" ${VCPKG_LIB_DIR} LIB_BOOST_SYSTEM)
 ## message("boost_system: ${LIB_BOOST_SYSTEM}")
-function(check_vcpkg_boost_lib BOOST_LIB_NAME VCPKG_LIB_DIR out_LIB)
-    check_vcpkg_boost_postfix(VCPKG_BOOST_POSTFIX)
+function(vcpkg_find_boost BOOST_LIB_NAME VCPKG_LIB_DIR out_LIB)
+    vcpkg_find_boost_postfix(VCPKG_BOOST_POSTFIX)
     set(LIB_FULLNAME ${BOOST_LIB_NAME}${VCPKG_BOOST_POSTFIX})
 
     find_library(${out_LIB} ${LIB_FULLNAME} PATHS ${VCPKG_LIB_DIR})
@@ -27,5 +27,5 @@ function(check_vcpkg_boost_lib BOOST_LIB_NAME VCPKG_LIB_DIR out_LIB)
     endif()
 
     set(${out_LIB} ${${out_LIB}} PARENT_SCOPE)
-    #message("find ${LIB_FULLNAME} ${out_LIB}")
 endfunction()
+
