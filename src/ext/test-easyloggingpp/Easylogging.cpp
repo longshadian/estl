@@ -1,5 +1,5 @@
 
-#include <filesystem>
+//#include <filesystem>
 
 #include "Easylogging.h"
 
@@ -56,10 +56,12 @@ void Easylogging::LogRollOut(const char* filename, std::size_t size)
     ostm << filename << "." << ++index;
     std::string new_filename = ostm.str();
 
+/*
     std::error_code ec{};
     if (std::filesystem::exists(new_filename, ec)) {
         std::filesystem::remove(new_filename, ec);
     }
     std::filesystem::rename(filename, new_filename.c_str(), ec);
+*/
 }
 

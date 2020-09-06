@@ -6,7 +6,7 @@
 #include <memory>
 #include <iostream>
 #include <fstream>
-#include <filesystem>
+//#include <filesystem>
 
 
 
@@ -28,7 +28,7 @@ void LogRollOut(const char* filename, std::size_t size)
     std::string new_filename = ostm.str();
 
     std::error_code ec{};
-    std::filesystem::rename(filename, new_filename.c_str(), ec);
+    //std::filesystem::rename(filename, new_filename.c_str(), ec);
 }
 
 void InitLog()
@@ -62,7 +62,7 @@ void InitLog()
     */
 }
 
-void Test1()
+void Test1(std::string b, std::vector<int> a)
 {
     std::string s = "11111111111";
     s.resize(1000, 'a');
@@ -73,7 +73,7 @@ void Test1()
         LOG(FATAL) << s;
         LOG(ERROR) << s;
         LOG(WARNING) << s;
-        LOG(INFO) << s;
+        LOG(INFO) << __FILE__ << " " << __FUNCTION__ << " " << s;
         //LOG(VERBOSE) << s;
         //LOG(Unknown) << s;
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
@@ -101,13 +101,13 @@ int main(int argc, char** argv)
     //InitLog();
     Easylogging log;
     //log.Init();
-    log.InitFromConf("log.confx");
+    log.InitFromConf("log.conf");
 
     std::thread t(Test2);
 
     std::cout << "Test1" << std::this_thread::get_id()<< "\n";
 
-    Test1();
+    Test1(std::string{}, std::vector<int>{});
 
     t.join();
 

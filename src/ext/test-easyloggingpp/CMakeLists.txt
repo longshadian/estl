@@ -19,18 +19,24 @@ elseif(VCPKG_DIR)
     include_directories(${VCPKG_INC_DIR})
 endif()
 
-if(WIN32)
-	ADD_DEFINITIONS("/std:c++17")
-	ADD_DEFINITIONS("/D _WIN32_WINNT=0x0601")
-	ADD_DEFINITIONS("/D _SILENCE_ALL_CXX17_DEPRECATION_WARNINGS")
-	ADD_DEFINITIONS("/utf-8")     ### utf-8 no-bom warning C4819: 
+if(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
+	add_definitions("/std:c++17")
+	add_definitions("/D _WIN32_WINNT=0x0601")
+	add_definitions("/D _SILENCE_ALL_CXX17_DEPRECATION_WARNINGS")
+	add_definitions("/utf-8")     ### utf-8 no-bom warning C4819: 
+	
+	add_definitions("/D ELPP_THREAD_SAFE")
+	add_definitions("/D ELPP_FORCE_USE_STD_THREAD")
+	add_definitions("/D ELPP_DISABLE_FATAL_LOGS")
+	add_definitions("/D ELPP_NO_DEFAULT_LOG_FILE")
+elseif(CMAKE_CXX_COMPILER_ID MATCHES "GNU")
+	add_definitions(-DELPP_THREAD_SAFE)
+	add_definitions(-DELPP_FORCE_USE_STD_THREAD)
+	add_definitions(-DELPP_DISABLE_FATAL_LOGS)
+	add_definitions(-DELPP_NO_DEFAULT_LOG_FILE)
 
-	ADD_DEFINITIONS("/D ELPP_THREAD_SAFE")
-	ADD_DEFINITIONS("/D ELPP_FORCE_USE_STD_THREAD")
-	ADD_DEFINITIONS("/D ELPP_DISABLE_FATAL_LOGS")
-	ADD_DEFINITIONS("/D ELPP_NO_DEFAULT_LOG_FILE")
-
-endif(WIN32)
+	set(CMAKE_CXX_FLAGS "-std=c++17" ${CMAKE_CXX_FLAGS})
+endif()
 
 
 add_executable(${PROJECT_NAME} 
@@ -38,10 +44,5 @@ add_executable(${PROJECT_NAME}
 	Easylogging.h Easylogging.cpp
 	)
 
-if(USE_CMAKE)
-	#target_link_libraries(Fmt PRIVATE fmt::fmt fmt::fmt-header-only)
-elseif(VCPKG_DIR)
-	#vcpkg_find_lib_dir(${PLATFORM_TARGET} ${VCPKG_DIR} VCPKG_LIB_DIR)
-	#vcpkg_find_fmt("fmt" ${VCPKG_LIB_DIR} VCPKG_FMT_LIB)
-	#target_link_libraries(Fmt ${VCPKG_FMT_LIB})
-endif()
+target_link_libraries(${PROJECT_NAME} pthread)
+
