@@ -5,14 +5,13 @@ project(Enoki)
 include_directories("D:/github/enoki/include")
 
 if(USE_CMAKE)
-	find_package(fmt CONFIG REQUIRED)
-	include_directories(${fmt_INCLUDE_DIRS})
+	
 elseif(VCPKG_DIR)
     #### cmake模块
     #set(CMAKE_MODULE_PATH "${CMAKE_HOME_DIRECTORY}/cmake" ${CMAKE_MODULE_PATH})
 	include(Functions)
 	include(Vcpkg)
-	include(VcpkgFmt)
+	
 
     #### 获取平台目标类型 x86, x64
     util_check_platform_size(PLATFORM_TARGET)
@@ -30,9 +29,8 @@ endif(WIN32)
 add_executable(Enoki Enoki.cpp)
 
 if(USE_CMAKE)
-	target_link_libraries(Enoki PRIVATE fmt::fmt fmt::fmt-header-only)
+	target_link_libraries(Enoki PRIVATE)
 elseif(VCPKG_DIR)
-	vcpkg_find_lib_dir(${PLATFORM_TARGET} ${VCPKG_DIR} VCPKG_LIB_DIR)
-	vcpkg_find_fmt("fmt" ${VCPKG_LIB_DIR} VCPKG_FMT_LIB)
+
 	target_link_libraries(Enoki ${VCPKG_FMT_LIB})
 endif()

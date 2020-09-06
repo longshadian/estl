@@ -56,24 +56,33 @@ void platform_gettimeofday(struct timeval* tp)
 
 static bool Test1()
 {
-    std::size_t n = 10000;
+    std::size_t n = 100000;
     std::vector<timeval> arr1;
     std::vector<timeval> arr2;
     arr1.resize(n);
     arr2.resize(n);
 
+    PerformanceTimer pt1;
     for (std::size_t i = 0; i != n; ++i) {
         chrono_gettimeofday(&arr1[i]);
     }
+    pt1.Stop();
 
-    PerformanceTimer pt1;
     PerformanceTimer pt2;
+    for (std::size_t i = 0; i != n; ++i) {
+        platform_gettimeofday(&arr2[i]);
+    }
+    pt2.Stop();
+    LogInfo << "chrono   gettimeofday: " << n << " " << pt1.CostMicroseconds();
+    LogInfo << "platform gettimeofday: " << n << " " << pt2.CostMicroseconds();
+    LogInfo << "delta: " << pt1.CostMicroseconds() - pt2.CostMicroseconds();
+
     return true;
 }
 
 } // namespace test_gettimeofday
 
-#if 1
+#if 0
 TEST_CASE("test_gettimeofday")
 {
     //LogInfo << __FILE__;
