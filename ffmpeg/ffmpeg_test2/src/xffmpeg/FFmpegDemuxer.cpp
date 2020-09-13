@@ -66,7 +66,7 @@ int FFmpegDemuxer::ParsePkg(const void* buf, int len, int* consume_len)
     return pkt_->size == 0  ? 0 : 1;
 }
 
-int FFmpegDemuxer::ParsePkgAll(const void* buf, int len, DecodeProc proc, void* private_data)
+int FFmpegDemuxer::ParsePkgAll(const void* buf, int len, ParsePkgProc proc, void* private_data)
 {
     const uint8_t* data = reinterpret_cast<const uint8_t*>(buf);
     int consume_len = 0;
@@ -76,7 +76,8 @@ int FFmpegDemuxer::ParsePkgAll(const void* buf, int len, DecodeProc proc, void* 
         if (ret == -1)
             return -1;
         if (ret == 1) {
-            proc(ctx_, frame_, pkt_, private_data);
+            if (proc)
+                proc(ctx_, frame_, pkt_, private_data);
         } 
         data += consume_len;
         len -= consume_len;
@@ -84,24 +85,38 @@ int FFmpegDemuxer::ParsePkgAll(const void* buf, int len, DecodeProc proc, void* 
     return 0;
 }
 
+int FFmpegDemuxer::SendPacket()
+{
+    return ::avcodec_send_packet(ctx_, pkt_);
+}
+
 int FFmpegDemuxer::Decode()
 {
-    int ret = ::avcodec_send_packet(ctx_, pkt_);
-    if (ret < 0) {
+    int ret = ::avcodec_receive_frame(ctx_, frame_);
+    if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF)
+        return 0;
+    else if (ret < 0)
         return -1;
-    }
+    else
+        return 1;
+}
 
+int FFmpegDemuxer::DecodeAll(DecodeFrameProc proc, void* private_data)
+{
+    int ret = 0;
     while (ret >= 0) {
-        // avcodec_decode_video2();     // attribute_deprecated
-        // av_read_frame();
         ret = ::avcodec_receive_frame(ctx_, frame_);
         if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF)
-            return;
-        else if (ret < 0) {
+            return 0;
+        else if (ret < 0)
             return -1;
+        else {
+            if (proc)
+                proc(ctx_, frame_, private_data);
         }
-        /* the picture is allocated by the decoder. no need to
-           free it */
+    }
+    return 0;
+
 #if 0
         snprintf(buf, sizeof(buf), "%s-%d", filename, dec_ctx->frame_number);
         //pgm_save(frame->data[0], frame->linesize[0], frame->width, frame->height, buf);
@@ -120,7 +135,6 @@ int FFmpegDemuxer::Decode()
             << " [" << frame->width << "," << frame->height
             << "\n";
 #endif
-    }
-    return 0;
 }
+
 

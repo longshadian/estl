@@ -1,6 +1,5 @@
 #pragma once
 
-#include <vector>
 #include <cstdint>
 
 #ifdef __cplusplus
@@ -18,7 +17,8 @@ extern "C"
 class FFmpegDemuxer
 {
 public:
-    typedef void (*DecodeProc)(AVCodecContext* ctx, AVFrame* frame, AVPacket* pkt, void* private_data);
+    typedef void (*ParsePkgProc)(AVCodecContext* ctx, AVFrame* frame, AVPacket* pkt, void* private_data);
+    typedef void (*DecodeFrameProc)(AVCodecContext* ctx, AVFrame* frame, void* private_data);
 
 public:
     FFmpegDemuxer();
@@ -26,8 +26,10 @@ public:
 
     int Init(AVCodecID codec_id = AV_CODEC_ID_H264);
     int ParsePkg(const void* buf, int len, int* consume_len);
-    int ParsePkgAll(const void* buf, int len, DecodeProc proc, void* private_data);
+    int ParsePkgAll(const void* buf, int len, ParsePkgProc proc, void* private_data);
+    int SendPacket();
     int Decode();
+    int DecodeAll(DecodeFrameProc proc, void* private_data);
 
     /* const */ AVCodec* const_codec_;
     AVCodecParserContext* parser_;

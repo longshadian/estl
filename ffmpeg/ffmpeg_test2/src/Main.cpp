@@ -8,8 +8,7 @@ int TestVideoForward();
 int TestVideoForwardDecode();
 int TestTranscodeXX();
 int TestDecode();
-
-void Test_XDecode_Load264();
+int TestH264File();
 
 int main(int argc, char **argv)
 {
@@ -21,9 +20,8 @@ int main(int argc, char **argv)
     //TestVideoForward();
     //TestVideoForwardDecode();
     //TestTranscodeXX();
-    //TestDecode();
-
-    Test_XDecode_Load264();
+    TestDecode();
+    //TestH264File();
 
     return 0;
 }

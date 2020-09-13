@@ -33,13 +33,19 @@
 
 #include <sstream>
 #include <iostream>
+#include <cassert>
 
 #include "xffmpeg.h"
 
 #include "Utils.h"
+#include "FFmpegUtils.h"
 
 //#define INBUF_SIZE 4096
-#define INBUF_SIZE 1000
+// #define INBUF_SIZE 1000
+#define INBUF_SIZE 1073741824
+
+//#define XEXIT(x) exit(1)
+#define XEXIT(x) (assert(0))
 
 static void pgm_save(unsigned char *buf, int wrap, int xsize, int ysize,
                      char *filename)
@@ -63,7 +69,7 @@ static void decode(AVCodecContext *dec_ctx, AVFrame *frame, AVPacket *pkt,
     ret = avcodec_send_packet(dec_ctx, pkt);
     if (ret < 0) {
         fprintf(stderr, "Error sending a packet for decoding\n");
-        exit(1);
+        XEXIT(0);
     }
 
     std::ostringstream ostm;
@@ -79,7 +85,7 @@ static void decode(AVCodecContext *dec_ctx, AVFrame *frame, AVPacket *pkt,
             return;
         else if (ret < 0) {
             fprintf(stderr, "Error during decoding\n");
-            exit(1);
+            XEXIT(1);
         }
 
         //printf("saving frame %3d\n", dec_ctx->frame_number);
@@ -87,14 +93,13 @@ static void decode(AVCodecContext *dec_ctx, AVFrame *frame, AVPacket *pkt,
 
         /* the picture is allocated by the decoder. no need to
            free it */
-        snprintf(buf, sizeof(buf), "%s-%d", filename, dec_ctx->frame_number);
+        snprintf(buf, sizeof(buf), "%s-%d.jpeg", filename, dec_ctx->frame_number);
         //pgm_save(frame->data[0], frame->linesize[0], frame->width, frame->height, buf);
-#if 0
+#if 1
         if (frame->key_frame == 1) {
             //pgm_save(frame->data[0], frame->linesize[0], frame->width, frame->height, buf);
-            printf("ctx_fnumber: %d %d %d    [%d %d %d]\n", dec_ctx->frame_number, frame->key_frame, frame->pts
-                , frame->linesize[0], frame->width, frame->height
-            );
+            //printf("ctx_fnumber: %d %d %d    [%d %d %d]\n", dec_ctx->frame_number, frame->key_frame, frame->pts , frame->linesize[0], frame->width, frame->height );
+            ffmpeg_util_save_jpeg(frame, buf);
         }
 #endif
     std::cout << "pic_type: " << utils::picture_type(frame->pict_type) 
@@ -115,7 +120,9 @@ int TestDecode()
     AVCodecContext *c= NULL;
     FILE *f;
     AVFrame *frame;
-    uint8_t inbuf[INBUF_SIZE + AV_INPUT_BUFFER_PADDING_SIZE];
+    uint8_t* xinbuf = new uint8_t[INBUF_SIZE + AV_INPUT_BUFFER_PADDING_SIZE];
+    uint8_t* inbuf = xinbuf;
+    //uint8_t inbuf[INBUF_SIZE + AV_INPUT_BUFFER_PADDING_SIZE];
     uint8_t *data;
     size_t   data_size;
     int ret;
@@ -125,16 +132,16 @@ int TestDecode()
     if (argc <= 2) {
         fprintf(stderr, "Usage: %s <input file> <output file>\n"
                 "And check your input file is encoded by mpeg1video please.\n", argv[0]);
-        exit(0);
+        XEXIT(1);
     }
 #endif
 
-    filename = "a.264";
+    filename = "E:/resource/xiaoen.h264";
     outfilename = "b";
 
     pkt = av_packet_alloc();
     if (!pkt)
-        exit(1);
+        XEXIT(1);
 
     /* set end of buffer to 0 (this ensures that no overreading happens for damaged MPEG streams) */
     memset(inbuf + INBUF_SIZE, 0, AV_INPUT_BUFFER_PADDING_SIZE);
@@ -144,19 +151,19 @@ int TestDecode()
     codec = avcodec_find_decoder(AV_CODEC_ID_H264);
     if (!codec) {
         fprintf(stderr, "Codec not found\n");
-        exit(1);
+        XEXIT(1);
     }
 
     parser = av_parser_init(codec->id);
     if (!parser) {
         fprintf(stderr, "parser not found\n");
-        exit(1);
+        XEXIT(1);
     }
 
     c = avcodec_alloc_context3(codec);
     if (!c) {
         fprintf(stderr, "Could not allocate video codec context\n");
-        exit(1);
+        XEXIT(1);
     }
 
     /* For some codecs, such as msmpeg4 and mpeg4, width and height
@@ -166,19 +173,19 @@ int TestDecode()
     /* open it */
     if (avcodec_open2(c, codec, NULL) < 0) {
         fprintf(stderr, "Could not open codec\n");
-        exit(1);
+        XEXIT(1);
     }
 
     f = fopen(filename, "rb");
     if (!f) {
         fprintf(stderr, "Could not open %s\n", filename);
-        exit(1);
+        XEXIT(1);
     }
 
     frame = av_frame_alloc();
     if (!frame) {
         fprintf(stderr, "Could not allocate video frame\n");
-        exit(1);
+        XEXIT(1);
     }
 
     int cnt = 0;
@@ -197,7 +204,7 @@ int TestDecode()
                                    data, data_size, AV_NOPTS_VALUE, AV_NOPTS_VALUE, 0);
             if (ret < 0) {
                 fprintf(stderr, "Error while parsing\n");
-                exit(1);
+                XEXIT(1);
             }
             data      += ret;
             data_size -= ret;
@@ -207,8 +214,8 @@ int TestDecode()
                 utils::avpacket_to_string(pkt, ostm);
                 //std::cout << ostm.str();
 
-                decode(c, frame, pkt, outfilename);
-                //exit(1);
+                //decode(c, frame, pkt, outfilename);
+                //XEXIT(1);
             }
         }
     }
@@ -223,5 +230,6 @@ int TestDecode()
     av_frame_free(&frame);
     av_packet_free(&pkt);
 
+    std::cout << "exit success\n";
     return 0;
 }
