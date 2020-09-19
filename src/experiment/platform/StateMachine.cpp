@@ -77,7 +77,7 @@ void Test1()
     
 } // namespace test_state
 
-#define USE_TEST
+//#define USE_TEST
 #if defined (USE_TEST)
 TEST_CASE("TestStateMachine")
 {

@@ -144,7 +144,7 @@ void Test3()
 
 } // namespace test_move
 
-#if 1
+#if 0
 TEST_CASE("TestMove")
 {
     using namespace test_move;
