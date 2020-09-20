@@ -80,6 +80,7 @@ static void decode(AVCodecContext *dec_ctx, AVFrame *frame, AVPacket *pkt,
         //AV_PIX_FMT_YUV420P;
         //avcodec_decode_video2();
         // av_read_frame();
+        //av_bsf_send_packet();
         ret = avcodec_receive_frame(dec_ctx, frame);
         if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF)
             return;

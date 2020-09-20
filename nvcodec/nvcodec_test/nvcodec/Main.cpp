@@ -6,6 +6,7 @@
 
 int TestH264_To_YUV();
 void TestH264_Decoder();
+void TestH264_DecoderTest2();
 
 int TestMain()
 {
@@ -22,7 +23,8 @@ int TestMain()
 int main()
 {
     //TestH264_To_YUV();
-    TestH264_Decoder();
+    //TestH264_Decoder();
+    TestH264_DecoderTest2();
     return 0;
 }
 

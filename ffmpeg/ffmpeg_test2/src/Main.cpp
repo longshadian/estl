@@ -9,6 +9,8 @@ int TestVideoForwardDecode();
 int TestTranscodeXX();
 int TestDecode();
 int TestH264File();
+int TestXFFmpeg_MemoryDemuxer();
+int TestSRS();
 
 int main(int argc, char **argv)
 {
@@ -20,8 +22,10 @@ int main(int argc, char **argv)
     //TestVideoForward();
     //TestVideoForwardDecode();
     //TestTranscodeXX();
-    TestDecode();
+    //TestDecode();
     //TestH264File();
+    //TestXFFmpeg_MemoryDemuxer();
+    TestSRS();
 
     return 0;
 }

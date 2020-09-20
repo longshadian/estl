@@ -36,6 +36,7 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
     add_definitions("/D _WIN32_WINNT=0x0601")
     add_definitions("/D _SILENCE_ALL_CXX17_DEPRECATION_WARNINGS")
     add_definitions("/D _CRT_SECURE_NO_WARNINGS")
+    add_definitions("/D SRS_AUTO_SSL")
     add_definitions("/utf-8")     ### utf-8 no-bom warning C4819: 
     
     #### ffmpeg编译错误
@@ -61,7 +62,7 @@ if(VCPKG_DIR)
     include_directories(${VCPKG_INC_DIR})
 
     #### TODO 动态判断头文件
-    include_directories("D:/vcpkg/installed/x64-windows-static/include")
+    include_directories("C:/vcpkg/installed/x64-windows-static/include")
 endif()
 
 ####
@@ -79,7 +80,7 @@ add_executable(${PROJECT_NAME}
 if(VCPKG_DIR)
     check_vcpkg_lib_dir(${PLATFORM_TARGET} ${VCPKG_DIR} VCPKG_LIB_DIR)
 
-    set(VCPKG_STATIC_LIB_DIR "D:/vcpkg/installed/x64-windows-static/debug/lib")
+    set(VCPKG_STATIC_LIB_DIR "C:/vcpkg/installed/x64-windows-static/debug/lib")
     
     #### openssl
     check_vcpkg_ssl_lib("libssl" ${VCPKG_LIB_DIR} SSL)
