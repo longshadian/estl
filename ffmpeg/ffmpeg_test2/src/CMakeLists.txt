@@ -62,7 +62,7 @@ if(VCPKG_DIR)
     include_directories(${VCPKG_INC_DIR})
 
     #### TODO 动态判断头文件
-    include_directories("C:/vcpkg/installed/x64-windows-static/include")
+    include_directories("D:/vcpkg/installed/x64-windows-static/include")
 endif()
 
 ####
@@ -80,7 +80,7 @@ add_executable(${PROJECT_NAME}
 if(VCPKG_DIR)
     check_vcpkg_lib_dir(${PLATFORM_TARGET} ${VCPKG_DIR} VCPKG_LIB_DIR)
 
-    set(VCPKG_STATIC_LIB_DIR "C:/vcpkg/installed/x64-windows-static/debug/lib")
+    set(VCPKG_STATIC_LIB_DIR "D:/vcpkg/installed/x64-windows-static/debug/lib")
     
     #### openssl
     check_vcpkg_ssl_lib("libssl" ${VCPKG_LIB_DIR} SSL)

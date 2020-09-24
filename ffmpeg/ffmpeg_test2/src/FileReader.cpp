@@ -36,6 +36,7 @@ void File_H264::Reset()
     fseek(f_, 0, SEEK_SET);
     demuxer_ = nullptr;
     demuxer_ = std::make_shared<xffmpeg::MemoryDemuxer>();
+    demuxer_->Init();
 }
 
 int File_H264::ReadPkt(uint8_t** pdata, int* len)

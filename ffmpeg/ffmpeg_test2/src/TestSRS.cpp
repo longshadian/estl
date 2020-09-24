@@ -7,10 +7,10 @@
 #include "console_log.h"
 
 std::shared_ptr<SrsRtmp> g_rtmp_yt;
-const std::string g_yt_name = "E:/resource/uniubi/123.264";
+const std::string g_yt_name = "F:/resource/video/yt.h264";
 
 std::shared_ptr<SrsRtmp> g_rtmp_xn;
-const std::string g_xn_name = "E:/resource/uniubi/xiaoen.264";
+const std::string g_xn_name = "F:/resource/video/yf.h264";
 
 
 std::shared_ptr<FileReader_H264> g_fr;
@@ -32,9 +32,9 @@ int TestSRS()
     CONSOLE_LOG_INFO << "aaa";
     int ret = 0;
 
-    if (1)
+    if (0)
     {
-        std::string yt_rtmp_url = "rtmp://192.168.1.15:1935/videotest/yt";
+        std::string yt_rtmp_url = "rtmp://192.168.16.231:1935/myapp/yt";
         g_rtmp_yt = std::make_shared<SrsRtmp>(yt_rtmp_url);
         ret = g_rtmp_yt->Init();
         if (ret != 0) {
@@ -45,7 +45,7 @@ int TestSRS()
 
     if (1)
     {
-        std::string xn_rtmp_url = "rtmp://192.168.1.15:1935/videotest/xn";
+        std::string xn_rtmp_url = "rtmp://192.168.1.99:1935/myapp/xn";
         g_rtmp_xn = std::make_shared<SrsRtmp>(xn_rtmp_url);
         ret = g_rtmp_xn->Init();
         if (ret != 0) {
@@ -57,8 +57,8 @@ int TestSRS()
     g_fr = std::make_shared<FileReader_H264>();
     std::vector<std::string> video_vec = 
     {
-        "E:/resource/uniubi/123.264",
-        "E:/resource/uniubi/xiaoen.264",
+        //g_yt_name,
+        g_xn_name,
     };
     for (const auto& fname : video_vec) {
         ret = g_fr->CreateReader(fname);
