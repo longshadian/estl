@@ -81,8 +81,14 @@ void testDay()
     std::cout << (p1.date() == p2.date()) << "\n";
 }
 
+void testListDir()
+{
+    std::string path_str = "";
+}
+
 int main()
 {
-    testDay();
+    //testDay();
+    testSaveDisk();
     return 0;
 }

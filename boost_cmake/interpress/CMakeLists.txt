@@ -10,14 +10,15 @@ elseif(USE_VCPKG)
     include(Vcpkg)
     include(VcpkgBoost)
     include(VcpkgZlib)
+    include(Functions)
 
     #### vcpkg 目录
     set(VCPKG_DIR "c:/vcpkg")
 
     #### 获取平台目标类型 x86, x64
-    check_platform_size(PLATFORM_TARGET)
+    util_check_platform_size(PLATFORM_TARGET)
     ## message("platform_type: ${PLATFORM_TARGET}")
-    check_vcpkg_include_dir(${PLATFORM_TARGET} ${VCPKG_DIR} VCPKG_INC_DIR)
+    vcpkg_find_include_dir(${PLATFORM_TARGET} ${VCPKG_DIR} VCPKG_INC_DIR)
     #message("VCPKG_INC_DIR: ${VCPKG_INC_DIR}")
     include_directories(${VCPKG_INC_DIR})
 endif()
@@ -26,9 +27,9 @@ add_executable(Interpress Interpress.cpp)
 if(USE_CMAKE)
 
 elseif(USE_VCPKG)
-    check_vcpkg_lib_dir(${PLATFORM_TARGET} ${VCPKG_DIR} VCPKG_LIB_DIR)
-    check_vcpkg_boost_lib("boost_system" ${VCPKG_LIB_DIR} BOOST_SYSTEM)
-    check_vcpkg_zlib_lib("zlib" ${VCPKG_LIB_DIR} ZLIB)
+    vcpkg_find_lib_dir(${PLATFORM_TARGET} ${VCPKG_DIR} VCPKG_LIB_DIR)
+    vcpkg_find_boost("boost_system" ${VCPKG_LIB_DIR} BOOST_SYSTEM)
+    vcpkg_find_zlib("zlib" ${VCPKG_LIB_DIR} ZLIB)
 
     set(Boost_LIBRARIES  ${ZLIB})
 endif()
