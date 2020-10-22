@@ -21,9 +21,9 @@ struct RtspPollerParams
     std::unique_ptr<int> px;
 };
 
-class RtspPollerImpl;
 class RtspPoller
 {
+    class RtspPollerImpl;
 public:
     RtspPoller();
     ~RtspPoller();

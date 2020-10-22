@@ -495,7 +495,7 @@ using namespace rtsp_poller_impl;
 /************************************************************************/
 /* class RtspPollerImpl                                                 */
 /************************************************************************/
-class RtspPollerImpl
+class RtspPoller::RtspPollerImpl
 {
 public:
     RtspPollerImpl();
@@ -563,7 +563,7 @@ void RtspPoller::Loop()
 }
 
 
-RtspPollerImpl::RtspPollerImpl()
+RtspPoller::RtspPollerImpl::RtspPollerImpl()
     : uri_()
     , m_scheduler_()
     , m_env_()
@@ -576,12 +576,12 @@ RtspPollerImpl::RtspPollerImpl()
 {
 }
 
-RtspPollerImpl::~RtspPollerImpl()
+RtspPoller::RtspPollerImpl::~RtspPollerImpl()
 {
 }
 
 #define RTSP_CLIENT_VERBOSITY_LEVEL 1 // by default, print verbose output from each "RTSPClient"
-bool RtspPollerImpl::Init(RtspPollerParams argv)
+bool RtspPoller::RtspPollerImpl::Init(RtspPollerParams argv)
 {
     SetParams(std::move(argv));
 
@@ -605,28 +605,28 @@ bool RtspPollerImpl::Init(RtspPollerParams argv)
     return true;
 }
 
-void RtspPollerImpl::Loop()
+void RtspPoller::RtspPollerImpl::Loop()
 {
     m_env_->taskScheduler().doEventLoop(&exit_looping_);
     shutdownStream(m_our_client_, 1);
 }
 
-void RtspPollerImpl::Stop()
+void RtspPoller::RtspPollerImpl::Stop()
 {
     exit_looping_ = 1;
 }
 
-void RtspPollerImpl::TimeoutProc0(void* data)
+void RtspPoller::RtspPollerImpl::TimeoutProc0(void* data)
 {
     RtspPollerImpl* pthis = reinterpret_cast<RtspPollerImpl*>(data);
     pthis->TimeoutProc();
 }
 
-void RtspPollerImpl::TimeoutProc()
+void RtspPoller::RtspPollerImpl::TimeoutProc()
 {
 }
 
-void RtspPollerImpl::SetParams(const RtspPollerParams& argv)
+void RtspPoller::RtspPollerImpl::SetParams(const RtspPollerParams& argv)
 {
     uri_ = argv.url;
     frame_proc_ = argv.frame_proc;

@@ -6,7 +6,7 @@
 
 #include <RtspPoller.h>
 #include <SRSRtmp.h>
-#include "console_log.h"
+#include "../common/console_log.h"
 
 VideoForward::VideoForward()
     : rtsp_uri_()
