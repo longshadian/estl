@@ -61,7 +61,7 @@ void NvEncoder::LoadNvEncApi()
     NVENC_API_CALL(NvEncodeAPIGetMaxSupportedVersion(&version));
     if (currentVersion > version)
     {
-        NVENC_THROW_ERROR("Current Driver Version does not support this NvEncodeAPI version, please upgrade driver", NV_ENC_ERR_INVALID_VERSION);
+        //NVENC_THROW_ERROR("Current Driver Version does not support this NvEncodeAPI version, please upgrade driver", NV_ENC_ERR_INVALID_VERSION);
     }
 
 
