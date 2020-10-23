@@ -59,24 +59,26 @@ util_check_platform_size(PLATFORM_TARGET)
 message("platform_type: ${PLATFORM_TARGET}")
 
 
-include_directories(${CUDA_INCLUDE_DIRS})
-include_directories(${CMAKE_HOME_DIRECTORY}/src/media_rtsp)
-include_directories(${CMAKE_HOME_DIRECTORY}/src/)
-include_directories(${CMAKE_HOME_DIRECTORY}/tests/alg_test/airport/include)
-include_directories(${CMAKE_HOME_DIRECTORY}/tests/alg_test/ucnn/include)
+include_directories(
+    ${CUDA_INCLUDE_DIRS}
+    "${CMAKE_HOME_DIRECTORY}/src/media_rtsp"
+    "${CMAKE_HOME_DIRECTORY}/src/"
+    "${CMAKE_HOME_DIRECTORY}/src/NvCodec9/include"
+    "${CMAKE_HOME_DIRECTORY}/tests/alg_test/airport/include"
+    "${CMAKE_HOME_DIRECTORY}/tests/alg_test/ucnn/include"
 
-include_directories("/home/bolan/works/Pro_Uniubi-PAS_x86/src/external/opencv/include")
-include_directories("/home/bolan/libs/include")
+    "/home/bolan/works/Pro_Uniubi-PAS_x86/src/external/opencv/include"
+    "/home/bolan/libs/include"
+)
 
 #### 生成可执行文件
-link_directories("/home/bolan/libs/lib")
-
 link_directories(
     "/home/bolan/works/PAS/libs/3rdparty/airport/lib"
     "/home/bolan/works/PAS/libs/3rdparty/ucnn/lib"
     "/home/bolan/works/PAS/libs/3rdparty/opencv/lib"
     "/home/bolan/works/PAS/libs/3rdparty/tensorrt/lib"
     "/home/bolan/works/PAS/libs/3rdparty/cuda/lib"
+    "/home/bolan/libs/lib"
 )
 
 add_executable(${PROJECT_NAME} 
@@ -95,7 +97,7 @@ target_link_libraries(${PROJECT_NAME}
 
     opencv_imgcodecs opencv_core opencv_imgproc opencv_cudawarping opencv_video opencv_videostab opencv_videoio
 
-    media_rtsp NvCodec
+    media_rtsp NvCodec9
     libliveMedia.a libgroupsock.a libBasicUsageEnvironment.a libUsageEnvironment.a
     nvparsers nvinfer
     nvcuvid nvidia-encode cuda

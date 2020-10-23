@@ -10,11 +10,11 @@
 
 #include <RtspPoller.h>
 
-#include <NvCodec/NvDecoder/NvDecoder.h>
+#include "NvCodec9.h"
 
 #include "algMultiServer.h"
 
-class NvDec
+class NvDec9
 {
 public:
     struct FrameData
@@ -27,8 +27,8 @@ public:
     };
 
 public:
-    NvDec();
-    ~NvDec();
+    NvDec9();
+    ~NvDec9();
 
     void FrameProc(
         unsigned char* buffer,
@@ -39,11 +39,14 @@ public:
     );
 
     int Init(int gpu_num, cudaVideoCodec type);
+    int InitEncode(int nWidth, int nHeight, NV_ENC_BUFFER_FORMAT eFormat, NvEncoderInitParam encodeCLIOptions,
+         std::string save_file);
     int StartPullRtspThread(std::string rtsp_uri);
     int StartDecoder(std::string pic_dir);
 
 private:
     int VideoDecode(FrameData& frame_data, const std::string& pic_dir);
+    int VideoEncode(void* pic_data, size_t len, int64_t frame_num);
 
     int frame_num_;
     CUcontext cuContext;
@@ -60,6 +63,9 @@ private:
     std::unique_ptr<algMultiServer> server_;
 
     uint64_t gpu_buffer_;
+
+    std::unique_ptr<NvEncoderCuda> nvenc_;
+    FILE* out_f_;
 }; 
 
 

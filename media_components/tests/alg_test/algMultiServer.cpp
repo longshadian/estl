@@ -3,8 +3,7 @@
 #include "../common/utility.h"
 #include "../common/console_log.h"
 
-#include "NvCodec/Utils/NvCodecUtils.h"
-#include "NvCodec/Utils/ColorSpace.h"
+#include "NvCodec9.h"
 
 #define EASYLOG_INFO CONSOLE_LOG_INFO
 #define EASYLOG_WARNING CONSOLE_LOG_WARN
@@ -196,6 +195,51 @@ static void YUVFrameNv12ToBgr(algMultiDecodeParam& param)
     cuCtxPopCurrent(NULL);
 }
 
+static void RealtimeDraw(
+    const std::vector<std::vector<uniHumanInfo>>& human_info_vec,
+    const std::vector<uniFrameInfoAlg>& frame_info,
+    const std::vector<std::vector<uniBestFrameInfo>>& out_best_frame_info,
+    const std::string& save_path,
+    std::vector<cv::Mat>& cpu_mat
+)
+{
+    cpu_mat.resize(frame_info.size());
+    for (size_t batch_idx = 0; batch_idx != human_info_vec.size(); ++batch_idx) {
+        cv::cuda::GpuMat gpu_mat(1080, 1920, CV_8UC3, (void*)(frame_info[batch_idx].PhyAddress));
+        gpu_mat.download(cpu_mat[batch_idx]);
+
+        bool changed = false;
+        const auto& vec = human_info_vec[batch_idx];
+        for (size_t human_idx = 0; human_idx != vec.size(); ++human_idx) {
+            const uniHumanInfo& human = vec[human_idx];
+
+            cv::cuda::Rect
+            cv::Rect head_rect = cv::Rect(
+                human.head_rect.xLeft, human.head_rect.yTop,
+                human.head_rect.xRight - human.head_rect.xLeft, human.head_rect.yBottom - human.head_rect.yTop);
+            if (!head_rect.empty()) {
+                cv::rectangle(cpu_mat[batch_idx], head_rect, cv::Scalar(0, 255, 255), 2, 1, 0);
+                changed = true;
+            }
+
+            cv::Rect body_rect = cv::Rect(
+                human.body_rect.xLeft, human.body_rect.yTop,
+                human.body_rect.xRight - human.body_rect.xLeft, human.body_rect.yBottom - human.body_rect.yTop);
+            if (!body_rect.empty()) {
+                cv::rectangle(cpu_mat[batch_idx], body_rect, cv::Scalar(255, 0, 0), 2, 1, 0);
+                changed = true;
+            }
+        }
+
+        if (changed && 0) {
+            std::ostringstream ostm;
+            ostm << save_path << "/x_" << frame_info[batch_idx].frame_id << ".jpg";
+            std::string pic_name = ostm.str();
+            EASYLOG_INFO << pic_name;
+            cv::imwrite(pic_name, cpu_mat[batch_idx]);
+        }
+    }
+}
 
 /************************************************************************/
 /* class algMultiServer                                                 */
@@ -264,7 +308,9 @@ int algMultiServer::Init()
 }
 
 int algMultiServer::MulitDecode2(std::vector<algMultiDecodeParam>& alg_params,
-    std::vector<std::shared_ptr<AlgOutPutData>>& result_vec_out)
+    std::vector<std::shared_ptr<AlgOutPutData>>& result_vec_out,
+    std::vector<cv::Mat>& cpu_mat_vec
+)
 {
     temp_in_frame_info_.clear();
     temp_in_frame_info_.resize(alg_params.size());
@@ -370,6 +416,10 @@ int algMultiServer::MulitDecode2(std::vector<algMultiDecodeParam>& alg_params,
     std::vector<std::vector<uniHumanInfo>> real_time_human_info_multi = alg_person_snap_->snap(temp_in_frame_info_, config_param, temp_out_success_id_info_, temp_out_best_frame_info_);
 #endif
     alg_timer.Stop();
+    if (1) {
+        RealtimeDraw(real_time_human_info_multi, temp_in_frame_info_, temp_out_best_frame_info_
+            , "/home/bolan/works/pic_alg", cpu_mat_vec);
+    }
     EASYLOG_INFO << "ptimer alg cost: " << alg_timer.GetMilliseconds();
 
 #if 1

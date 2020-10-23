@@ -380,3 +380,40 @@ void Bgra64ToP016(uint8_t *dpBgra, int nBgraPitch, uint8_t *dpP016, int nP016Pit
         <<<dim3((nWidth + 63) / 32 / 2, (nHeight + 3) / 2 / 2), dim3(32, 2)>>>
         (dpBgra, nBgraPitch, dpP016, nP016Pitch, nWidth, nHeight);
 }
+
+template<class YuvUnitx2, class Rgb, class RgbUnitx2>
+__global__ static void YuvToRgbKernel111(uint8_t *pYuv, int nYuvPitch, uint8_t *pRgbp, int nRgbpPitch, int nWidth, int nHeight) {
+    int x = (threadIdx.x + blockIdx.x * blockDim.x) * 2;
+    int y = (threadIdx.y + blockIdx.y * blockDim.y) * 2;
+    if (x + 1 >= nWidth || y + 1 >= nHeight) {
+        return;
+    }
+
+    uint8_t *pSrc = pYuv + x * sizeof(YuvUnitx2) / 2 + y * nYuvPitch;
+	
+	unsigned int uiIndex = x * sizeof(YuvUnitx2) / 2 + y * nYuvPitch;
+	
+    YuvUnitx2 l0 = *(YuvUnitx2 *)pSrc;
+    YuvUnitx2 l1 = *(YuvUnitx2 *)(pSrc + nYuvPitch);
+    YuvUnitx2 ch = *(YuvUnitx2 *)(pSrc + (nHeight - y / 2) * nYuvPitch);
+
+    Rgb rgb0 = YuvToRgbForPixel<Rgb>(l0.x, ch.x, ch.y),
+        rgb1 = YuvToRgbForPixel<Rgb>(l0.y, ch.x, ch.y),
+        rgb2 = YuvToRgbForPixel<Rgb>(l1.x, ch.x, ch.y),
+        rgb3 = YuvToRgbForPixel<Rgb>(l1.y, ch.x, ch.y);
+
+    uint8_t *pDst = pRgbp + uiIndex*3;
+	int stride = nRgbpPitch*3;
+	pDst[0] = rgb0.v.x; pDst[1] = rgb0.v.y; pDst[2] = rgb0.v.z;
+	pDst[3] = rgb1.v.x; pDst[4] = rgb1.v.y; pDst[5] = rgb1.v.z;
+	pDst[stride+0] = rgb2.v.x; pDst[stride+1] = rgb2.v.y; pDst[stride+2] = rgb2.v.z;
+	pDst[stride+3] = rgb3.v.x; pDst[stride+4] = rgb3.v.y; pDst[stride+5] = rgb3.v.z;
+
+}
+
+void Nv12ToBgr(uint8_t *dpNv12, int nNv12Pitch, uint8_t *dpBgrp, int nBgrpPitch, int nWidth, int nHeight, int iMatrix) {
+    SetMatYuv2Rgb(iMatrix);
+    YuvToRgbKernel111<uchar2, BGRA32, uchar2>
+        <<<dim3((nWidth + 63) / 32 / 2, (nHeight + 3) / 2 / 2), dim3(32, 2)>>>
+        (dpNv12, nNv12Pitch, dpBgrp, nBgrpPitch, nWidth, nHeight);
+}

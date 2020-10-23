@@ -112,6 +112,8 @@ struct AlgOutPutData
     int alWorkMode;
 
     int serialNumberIndex; // 设备索引
+
+    std::shared_ptr<cv::Mat> cpu_mat;
 };
 
 
@@ -152,7 +154,11 @@ public:
     ~algMultiServer();
 
     int Init();
-    int MulitDecode2(std::vector<algMultiDecodeParam>& argv_in, std::vector<std::shared_ptr<AlgOutPutData>>& result_vec_out);
+    int MulitDecode2(std::vector<algMultiDecodeParam>& argv_in,
+        std::vector<std::shared_ptr<AlgOutPutData>>& result_vec_out,
+        std::vector<cv::Mat>& cpu_mat_vec
+    );
+
     void PostData(std::vector<std::shared_ptr<AlgOutPutData>> data);
 
     //std::shared_ptr<algGpuResource> img_nv12_scale_; // 缩放使用，如果不需要缩放，可能为空

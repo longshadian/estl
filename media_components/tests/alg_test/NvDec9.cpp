@@ -3,7 +3,7 @@
 
 #include <RtspPoller.h>
 
-#include "NvDec.h"
+#include "NvDec9.h"
 
 #include "../common/console_log.h"
 #include "../common/utility.h"
@@ -28,7 +28,7 @@ static void createCudaContext(CUcontext* cuContext, int iGpu, unsigned int flags
     ck(cuCtxCreate(cuContext, flags, cuDevice));
 }
 
-static std::unique_ptr<NvDec::FrameData> CreateFrameData(
+static std::unique_ptr<NvDec9::FrameData> CreateFrameData(
     unsigned char* buffer,
     unsigned int buffer_length,
     unsigned numTruncatedBytes,
@@ -37,7 +37,7 @@ static std::unique_ptr<NvDec::FrameData> CreateFrameData(
     int64_t frame_num
 )
 {
-    std::unique_ptr<NvDec::FrameData> p = std::make_unique<NvDec::FrameData>();
+    std::unique_ptr<NvDec9::FrameData> p = std::make_unique<NvDec9::FrameData>();
     p->frame_num_ = frame_num;
     p->numTruncatedBytes_ = numTruncatedBytes;
     p->presentationTime_ = presentationTime;
@@ -46,7 +46,20 @@ static std::unique_ptr<NvDec::FrameData> CreateFrameData(
     return p;
 }
 
-NvDec::NvDec()
+template<class EncoderClass>
+void InitializeEncoder(EncoderClass& pEnc, NvEncoderInitParam encodeCLIOptions, NV_ENC_BUFFER_FORMAT eFormat)
+{
+    NV_ENC_INITIALIZE_PARAMS initializeParams = { NV_ENC_INITIALIZE_PARAMS_VER };
+    NV_ENC_CONFIG encodeConfig = { NV_ENC_CONFIG_VER };
+
+    initializeParams.encodeConfig = &encodeConfig;
+    pEnc->CreateDefaultEncoderParams(&initializeParams, encodeCLIOptions.GetEncodeGUID(), encodeCLIOptions.GetPresetGUID());
+    encodeCLIOptions.SetInitParams(&initializeParams, eFormat);
+
+    pEnc->CreateEncoder(&initializeParams);
+}
+
+NvDec9::NvDec9()
     : frame_num_()
     , cuContext()
     , rtsp_(std::make_unique<RtspPoller>())
@@ -59,16 +72,23 @@ NvDec::NvDec()
     , resizeDim_()
     , server_(std::make_unique<algMultiServer>())
     , gpu_buffer_()
+    , nvenc_()
+    , out_f_()
 {
 }
 
-NvDec::~NvDec()
+NvDec9::~NvDec9()
 {
     if (rtsp_thd_.joinable())
         rtsp_thd_.join();
+    if (nvenc_) {
+        nvenc_->DestroyEncoder();
+    }
+    if (out_f_)
+        ::fclose(out_f_);
 }
 
-int NvDec::Init(int gpu_num, cudaVideoCodec type)
+int NvDec9::Init(int gpu_num, cudaVideoCodec type)
 {
     try {
         ck(cuInit(0));
@@ -80,7 +100,7 @@ int NvDec::Init(int gpu_num, cudaVideoCodec type)
         }
 
         createCudaContext(&cuContext, gpu_num, 0);
-        nvdec_ = std::make_unique<NvDecoder>(cuContext, true, type, false, false, &cropRect_, &resizeDim_);
+        nvdec_ = std::make_unique<NvDecoder>(cuContext, true, type, nullptr, false, false, &cropRect_, &resizeDim_);
 
         {
             CUdeviceptr gpu_mem{};
@@ -101,13 +121,29 @@ int NvDec::Init(int gpu_num, cudaVideoCodec type)
     }
 }
 
-int NvDec::StartPullRtspThread(std::string rtsp_uri)
+int NvDec9::InitEncode(int nWidth, int nHeight, NV_ENC_BUFFER_FORMAT eFormat, NvEncoderInitParam encodeCLIOptions,
+    std::string save_file)
+{
+    try {
+        nvenc_ = std::make_unique<NvEncoderCuda>(cuContext, nWidth, nHeight, eFormat);
+        InitializeEncoder(nvenc_, encodeCLIOptions, eFormat);
+        out_f_ = ::fopen(save_file.c_str(), "wb");
+        if (!out_f_)
+            return -1;
+        return 0;
+    } catch (const std::exception& e) {
+        CONSOLE_LOG_WARN << "exception: " << e.what();
+        return -1;
+    }
+}
+
+int NvDec9::StartPullRtspThread(std::string rtsp_uri)
 {
     using namespace std::placeholders;
 
     RtspPollerParams params;
     params.url = std::move(rtsp_uri);
-    params.frame_proc = std::bind(&NvDec::FrameProc, this, _1, _2, _3, _4, _5);
+    params.frame_proc = std::bind(&NvDec9::FrameProc, this, _1, _2, _3, _4, _5);
     if (!rtsp_->Init(std::move(params))) {
         std::cout << "init error\n";
         return -1;
@@ -120,7 +156,7 @@ int NvDec::StartPullRtspThread(std::string rtsp_uri)
     return 0;
 }
 
-int NvDec::StartDecoder(std::string pic_dir)
+int NvDec9::StartDecoder(std::string pic_dir)
 {
     std::unique_ptr<FrameData> p = nullptr;
     while (1) {
@@ -140,7 +176,7 @@ int NvDec::StartDecoder(std::string pic_dir)
     return 0;
 }
 
-void NvDec::FrameProc(
+void NvDec9::FrameProc(
     unsigned char* buffer,
     unsigned int buffer_length,
     unsigned numTruncatedBytes,
@@ -169,30 +205,16 @@ void NvDec::FrameProc(
     }
 }
 
-int NvDec::VideoDecode(FrameData& frame_data, const std::string& pic_dir)
+int NvDec9::VideoDecode(FrameData& frame_data, const std::string& pic_dir)
 {
     comm::MicrosecondTimer timer;
     timer.Start();
 
-    int nFrameReturned = 0;
     uint8_t* pframe = nullptr;
-    nFrameReturned = nvdec_->Decode(frame_data.data_.data(), frame_data.data_.size());
-    bool bDecodeOutSemiPlanar = false;
-    /*
-    if (!nFrame && nFrameReturned)
-        LOG(INFO) << dec.GetVideoInfo();
-    */
-    bDecodeOutSemiPlanar = (nvdec_->GetOutputFormat() == cudaVideoSurfaceFormat_NV12) 
-        || (nvdec_->GetOutputFormat() == cudaVideoSurfaceFormat_P016);
-
-    for (int i = 0; i < nFrameReturned; i++) {
-        pframe = nvdec_->GetFrame();
-        /*
-        if (bOutPlanar && bDecodeOutSemiPlanar) {
-            ConvertSemiplanarToPlanar(pFrame, dec.GetWidth(), dec.GetHeight(), dec.GetBitDepth());
-        }
-        fpOut.write(reinterpret_cast<char*>(pFrame), dec.GetFrameSize());
-        */
+    std::vector<uint8_t*> frame_returned;
+    NvCodec9_Helper::Decode(nvdec_.get(), frame_data.data_.data(), frame_data.data_.size(), &frame_returned);
+    for (size_t i = 0; i < frame_returned.size(); i++) {
+        pframe = frame_returned[i];
 
         if (1) {
             std::vector<algMultiDecodeParam> in_vec(1);
@@ -206,9 +228,17 @@ int NvDec::VideoDecode(FrameData& frame_data, const std::string& pic_dir)
             //int64_t frame_timestamp{};
             //std::string frame_deviceno{};
             std::vector<std::shared_ptr<AlgOutPutData>> alg_result;
-            server_->MulitDecode2(in_vec, alg_result);
+            std::vector<cv::Mat> cpu_mat_vec;
+            server_->MulitDecode2(in_vec, alg_result, cpu_mat_vec);
+
+            cv::Mat& cpu_mat = cpu_mat_vec[0];
+            cv::Mat cpu_mat_nv12;
+            cv::cvtColor(cpu_mat, cpu_mat_nv12, cv::COLOR_BGR2YUV_YV12);
+            //VideoEncode(cpu_mat.ptr(), cpu_mat.total(), frame_data.frame_num_);
+            VideoEncode(cpu_mat_nv12.data, nvenc_->GetFrameSize(), frame_data.frame_num_);
+
             if (!alg_result.empty()) {
-                server_->PostData(std::move(alg_result));
+                //server_->PostData(std::move(alg_result));
             }
         }
 
@@ -238,22 +268,45 @@ int NvDec::VideoDecode(FrameData& frame_data, const std::string& pic_dir)
 
     timer.Stop();
     CONSOLE_LOG_INFO << "deocde cost: " << timer.GetMilliseconds() 
-        << " nFrameReturned: " << nFrameReturned
+        << " nFrameReturned: " << frame_returned.size()
         << " frame size: " << frame_data.data_.size()
     ;
-
-    /*
-    std::vector <std::string> aszDecodeOutFormat = { "NV12", "P016", "YUV444", "YUV444P16" };
-    if (bOutPlanar) {
-        aszDecodeOutFormat[0] = "iyuv";   aszDecodeOutFormat[1] = "yuv420p16";
-    }
-    std::cout << "Total frame decoded: " << nFrame << std::endl
-        << "Saved in file " << szOutFilePath << " in "
-        << aszDecodeOutFormat[dec.GetOutputFormat()]
-        << " format" << std::endl;
-    fpOut.close();
-    */
     return 0;
 }
+
+int NvDec9::VideoEncode(void* pic_data, size_t len, int64_t frame_num)
+{
+    comm::MicrosecondTimer timer;
+    timer.Start();
+    std::vector<std::vector<uint8_t>> packet;
+    if ((int)len == nvenc_->GetFrameSize()) {
+        const NvEncInputFrame* input_frame = nvenc_->GetNextInputFrame();
+        NvEncoderCuda::CopyToDeviceFrame(cuContext, pic_data, 0, (CUdeviceptr)input_frame->inputPtr,
+            (int)input_frame->pitch,
+            nvenc_->GetEncodeWidth(),
+            nvenc_->GetEncodeHeight(),
+            CU_MEMORYTYPE_HOST,
+            input_frame->bufferFormat,
+            input_frame->chromaOffsets,
+            input_frame->numChromaPlanes
+        );
+        nvenc_->EncodeFrame(packet);
+    }
+    else {
+        nvenc_->EndEncode(packet);
+    }
+    timer.Stop();
+    CONSOLE_LOG_INFO << "encode frame_num: " << frame_num << " data: " << len << " " << nvenc_->GetFrameSize()
+        << " pkg_size: " << packet.size() << " cost: " << timer.GetMilliseconds();
+
+    for (const auto& vec : packet) {
+        //char buf[4] = {0,0,0,1};
+        //::fwrite(buf, 1, 4, out_f_);
+        ::fwrite(vec.data(), 1, vec.size(), out_f_);
+    }
+    return 0;
+}
+
+
 
 
