@@ -8,7 +8,7 @@ if(NOT CUDA_TOOLKIT_ROOT_DIR)
 endif()
 find_package(CUDA REQUIRED)
 
-##[[
+#[[
 message("-------> CUDA_INCLUDE_DIRS         ${CUDA_INCLUDE_DIRS}")
 message("-------> CUDA_LIBRARIES            ${CUDA_LIBRARIES}")
 message("-------> CUDA_CUFFT_LIBRARIES      ${CUDA_CUFFT_LIBRARIES}")
@@ -61,8 +61,7 @@ message("platform_type: ${PLATFORM_TARGET}")
 include_directories(
     "${CMAKE_HOME_DIRECTORY}/src/NvCodec9/"
     "${CMAKE_HOME_DIRECTORY}/src/NvCodec9/include"
-    "${CMAKE_HOME_DIRECTORY}/src"
-
+#"${CMAKE_HOME_DIRECTORY}/src"
 #  "/home/bolan/libs/include"
 )
 

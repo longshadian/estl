@@ -9,13 +9,14 @@
     #pragma GCC diagnostic ignored "-Wparentheses"
     #pragma GCC diagnostic ignored "-Wconversion"
 
-    #include <NvCodec/NvDecoder/NvDecoder.h>
-    #include <NvCodec/NvEncoder/NvEncoderCuda.h>
-    #include <NvCodec/Utils/NvEncoderCLIOptions.h>
+    #include <NvCodec10/NvDecoder/NvDecoder.h>
+    #include <NvCodec10/NvEncoder/NvEncoderCuda.h>
+    #include <NvCodec10/Utils/Logger.h>
+    #include <NvCodec10/Utils/NvCodecUtils.h>
+    #include <NvCodec10/Utils/NvEncoderCLIOptions.h>
 
     #pragma GCC diagnostic pop
 #else
 
 #endif
-
 

@@ -13,8 +13,8 @@
 #include <algorithm>
 #include <chrono>
 
-#include <nvcuvid.h>
-#include "NvCodec/NvDecoder/NvDecoder.h"
+#include "nvcuvid.h"
+#include "NvDecoder/NvDecoder.h"
 
 #define START_TIMER auto start = std::chrono::high_resolution_clock::now();
 #define STOP_TIMER(print_message) std::cout << print_message << \

@@ -1,6 +1,5 @@
-#add_subdirectory(rtsp_save_video)
-#add_subdirectory(rtsp_to_rtmp)
-#add_subdirectory(rtsp_nvdecode)
-#add_subdirectory(rtsp_nvencode)
+add_subdirectory(rtsp_save_video)
+add_subdirectory(rtsp_to_rtmp)
 add_subdirectory(sdk9)
+add_subdirectory(sdk10)
 

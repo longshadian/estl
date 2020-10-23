@@ -23,13 +23,12 @@
 #include <assert.h>
 #include <stdint.h>
 #include <string.h>
+#include "Logger.h"
 #include <ios>
 #include <sstream>
 #include <thread>
 #include <list>
 #include <condition_variable>
-
-#include "NvCodec/Utils/Logger.h"
 
 extern simplelogger::Logger *logger;
 

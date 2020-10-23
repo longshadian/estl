@@ -18,8 +18,7 @@
 #include <iterator>
 #include <cstring>
 #include <functional>
-
-#include "NvCodec/Utils/Logger.h"
+#include "../Utils/Logger.h"
 
 extern simplelogger::Logger *logger;
 

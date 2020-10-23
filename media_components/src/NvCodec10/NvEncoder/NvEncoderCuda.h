@@ -15,7 +15,7 @@
 #include <stdint.h>
 #include <mutex>
 #include <cuda.h>
-#include "NvCodec/NvEncoder/NvEncoder.h"
+#include "NvEncoder.h"
 
 #define CUDA_DRVAPI_CALL( call )                                                                                                 \
     do                                                                                                                           \

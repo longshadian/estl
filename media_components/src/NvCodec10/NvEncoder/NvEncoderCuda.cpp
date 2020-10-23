@@ -9,7 +9,7 @@
 *
 */
 
-#include "NvCodec9/NvEncoder/NvEncoderCuda.h"
+#include "NvEncoder/NvEncoderCuda.h"
 
 
 NvEncoderCuda::NvEncoderCuda(CUcontext cuContext, uint32_t nWidth, uint32_t nHeight, NV_ENC_BUFFER_FORMAT eBufferFormat,

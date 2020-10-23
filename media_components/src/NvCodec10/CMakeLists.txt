@@ -1,14 +1,14 @@
 set_property(GLOBAL PROPERTY USE_FOLDERS On)
 
-#project(NvCodec CXX)
-set(PROJECT_NAME NvCodec)
+#project(NvCodec10 CXX)
+set(PROJECT_NAME NvCodec10)
 
 if(NOT CUDA_TOOLKIT_ROOT_DIR)
     set(CUDA_TOOLKIT_ROOT_DIR "/usr/local/cuda-10.2")
 endif()
 find_package(CUDA REQUIRED)
 
-##[[
+#[[
 message("-------> CUDA_INCLUDE_DIRS         ${CUDA_INCLUDE_DIRS}")
 message("-------> CUDA_LIBRARIES            ${CUDA_LIBRARIES}")
 message("-------> CUDA_CUFFT_LIBRARIES      ${CUDA_CUFFT_LIBRARIES}")
@@ -34,7 +34,7 @@ set(CMAKE_MODULE_PATH
 include(Functions)
 
 #### 工程文件目录结构
-set(SRC_DIR "${CMAKE_HOME_DIRECTORY}/src/NvCodec")
+set(SRC_DIR "${CMAKE_HOME_DIRECTORY}/src/NvCodec10")
 util_auto_sources(SRC_C_FILES "*.c" "RECURSE" "${SRC_DIR}")
 util_auto_sources(SRC_CPP_FILES "*.cpp" "RECURSE" "${SRC_DIR}")
 util_auto_sources(SRC_CU_FILES "*.cu" "RECURSE" "${SRC_DIR}")
@@ -58,10 +58,10 @@ endif()
 util_check_platform_size(PLATFORM_TARGET)
 message("platform_type: ${PLATFORM_TARGET}")
 
-include_directories("/home/bolan/libs/include")
-include_directories(${CMAKE_HOME_DIRECTORY}/src/)
-#include_directories(${CMAKE_HOME_DIRECTORY}/src/NvCodec/NvDecoder)
-#include_directories(${CMAKE_HOME_DIRECTORY}/src/NvCodec/NvEncoder)
+include_directories(
+    "${CMAKE_HOME_DIRECTORY}/src/NvCodec10"
+    "${CMAKE_HOME_DIRECTORY}/src/NvCodec10/include"
+)
 
 set(CUDA_NVCC_FLAGS "-std=c++14")
 #### 生成可执行文件

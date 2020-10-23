@@ -1,14 +1,14 @@
 set_property(GLOBAL PROPERTY USE_FOLDERS On)
 
-#project(rtsp_nvdecode CXX)
-set(PROJECT_NAME rtsp_nvdecode)
+#project(sdk10_rtsp_nvdecode CXX)
+set(PROJECT_NAME sdk10_rtsp_nvdecode)
 
 if(NOT CUDA_TOOLKIT_ROOT_DIR)
     set(CUDA_TOOLKIT_ROOT_DIR "/usr/local/cuda-10.2")
 endif()
 find_package(CUDA REQUIRED)
 
-##[[
+#[[
 message("-------> CUDA_INCLUDE_DIRS         ${CUDA_INCLUDE_DIRS}")
 message("-------> CUDA_LIBRARIES            ${CUDA_LIBRARIES}")
 message("-------> CUDA_CUFFT_LIBRARIES      ${CUDA_CUFFT_LIBRARIES}")
@@ -36,7 +36,7 @@ set(CMAKE_MODULE_PATH
 include(Functions)
 
 #### 工程文件目录结构
-set(SRC_DIR "${CMAKE_HOME_DIRECTORY}/examples/rtsp_nvdecode")
+set(SRC_DIR "${CMAKE_HOME_DIRECTORY}/examples/sdk10/rtsp_nvdecode")
 util_auto_sources(SRC_C_FILES "*.c" "RECURSE" "${SRC_DIR}")
 util_auto_sources(SRC_CPP_FILES "*.cpp" "RECURSE" "${SRC_DIR}")
 util_auto_sources(SRC_H_FILES "*.h" "RECURSE" "${SRC_DIR}")
@@ -59,22 +59,29 @@ util_check_platform_size(PLATFORM_TARGET)
 message("platform_type: ${PLATFORM_TARGET}")
 
 
-include_directories(${CUDA_INCLUDE_DIRS})
-include_directories(${CMAKE_HOME_DIRECTORY}/src/media_rtsp)
-include_directories(${CMAKE_HOME_DIRECTORY}/src/)
-include_directories("/home/bolan/libs/include")
+include_directories(
+    ${CUDA_INCLUDE_DIRS}
+    "${CMAKE_HOME_DIRECTORY}/src/media_rtsp"
+    "${CMAKE_HOME_DIRECTORY}/src/media_rtsp"
+    "${CMAKE_HOME_DIRECTORY}/src/"
+    "${CMAKE_HOME_DIRECTORY}/src/NvCodec10/include"
+)
 
 #### 生成可执行文件
-link_directories("/home/bolan/libs/lib")
+link_directories(
+    "/home/bolan/libs/lib"
+    "${CMAKE_HOME_DIRECTORY}/src/NvCodec10/x86_64"
+)
+
 add_executable(${PROJECT_NAME} 
     ${SRC_C_FILES}
     ${SRC_CPP_FILES}
-    ../common/utility.cpp
+    ../../common/utility.cpp
 )
 
 #### 链接选项
 target_link_libraries(${PROJECT_NAME} 
-    media_rtsp NvCodec
+    media_rtsp NvCodec10
     libliveMedia.a libgroupsock.a libBasicUsageEnvironment.a libUsageEnvironment.a
     nvcuvid nvidia-encode cuda
     crypto ssl

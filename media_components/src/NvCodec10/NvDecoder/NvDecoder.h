@@ -19,8 +19,8 @@
 #include <iostream>
 #include <sstream>
 #include <string.h>
-#include <nvcuvid.h>
-#include "NvCodec/Utils/NvCodecUtils.h"
+#include "nvcuvid.h"
+#include "../Utils/NvCodecUtils.h"
 
 /**
 * @brief Exception class for error reporting from the decode API.

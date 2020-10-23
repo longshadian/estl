@@ -1,14 +1,13 @@
 #include <iostream>
 #include <sstream>
 
+#include <cuda_runtime.h>
 #include <RtspPoller.h>
 
 #include "NvDec.h"
 
-#include "../common/console_log.h"
-#include "../common/utility.h"
-
-#include <cuda_runtime.h>
+#include "../../common/console_log.h"
+#include "../../common/utility.h"
 
 simplelogger::Logger* logger = simplelogger::LoggerFactory::CreateConsoleLogger();
 

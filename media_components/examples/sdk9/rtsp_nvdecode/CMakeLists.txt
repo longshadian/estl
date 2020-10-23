@@ -8,7 +8,7 @@ if(NOT CUDA_TOOLKIT_ROOT_DIR)
 endif()
 find_package(CUDA REQUIRED)
 
-##[[
+#[[
 message("-------> CUDA_INCLUDE_DIRS         ${CUDA_INCLUDE_DIRS}")
 message("-------> CUDA_LIBRARIES            ${CUDA_LIBRARIES}")
 message("-------> CUDA_CUFFT_LIBRARIES      ${CUDA_CUFFT_LIBRARIES}")

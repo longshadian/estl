@@ -9,7 +9,7 @@
 *
 */
 
-#include "NvCodec9/NvEncoder/NvEncoder.h"
+#include "NvEncoder/NvEncoder.h"
 
 #ifndef _WIN32
 #include <cstring>
@@ -61,7 +61,7 @@ void NvEncoder::LoadNvEncApi()
     NVENC_API_CALL(NvEncodeAPIGetMaxSupportedVersion(&version));
     if (currentVersion > version)
     {
-        //NVENC_THROW_ERROR("Current Driver Version does not support this NvEncodeAPI version, please upgrade driver", NV_ENC_ERR_INVALID_VERSION);
+        NVENC_THROW_ERROR("Current Driver Version does not support this NvEncodeAPI version, please upgrade driver", NV_ENC_ERR_INVALID_VERSION);
     }
 
 
