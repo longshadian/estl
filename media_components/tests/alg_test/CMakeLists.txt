@@ -67,7 +67,7 @@ include_directories(
     "${CMAKE_HOME_DIRECTORY}/tests/alg_test/airport/include"
     "${CMAKE_HOME_DIRECTORY}/tests/alg_test/ucnn/include"
 
-    "/home/bolan/works/Pro_Uniubi-PAS_x86/src/external/opencv/include"
+    "/home/bolan/works/uniubi/Pro_Uniubi-PAS_x86/src/external/opencv/include"
     "/home/bolan/libs/include"
 )
 

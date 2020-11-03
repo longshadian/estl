@@ -3,6 +3,8 @@
 #include "../common/utility.h"
 #include "../common/console_log.h"
 
+#include <opencv2/opencv.hpp>
+
 #include "NvCodec9.h"
 
 #define EASYLOG_INFO CONSOLE_LOG_INFO
@@ -213,7 +215,6 @@ static void RealtimeDraw(
         for (size_t human_idx = 0; human_idx != vec.size(); ++human_idx) {
             const uniHumanInfo& human = vec[human_idx];
 
-            cv::cuda::Rect
             cv::Rect head_rect = cv::Rect(
                 human.head_rect.xLeft, human.head_rect.yTop,
                 human.head_rect.xRight - human.head_rect.xLeft, human.head_rect.yBottom - human.head_rect.yTop);
