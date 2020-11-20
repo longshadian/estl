@@ -24,7 +24,7 @@ message("-------------------->EXT_OUTPUT            ${EXT_OUTPUT}")
 #add_subdirectory(test-enoki)
 #add_subdirectory(test-fmt)
 #add_subdirectory(test-geolite2)
-add_subdirectory(test-jsoncpp)
+#add_subdirectory(test-jsoncpp)
 #add_subdirectory(test-libzip)
 #add_subdirectory(test-nlohmann-json)
 #add_subdirectory(test-spdlog)
@@ -32,6 +32,7 @@ add_subdirectory(test-jsoncpp)
 #add_subdirectory(test-zlib)
 #add_subdirectory(test-easyloggingpp)
 #add_subdirectory(test-zlib-other)
+add_subdirectory(test-sqlitecpp)
 
 
 
