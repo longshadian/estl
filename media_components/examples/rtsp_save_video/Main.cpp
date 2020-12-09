@@ -86,8 +86,8 @@ int main()
 {
     // 拉取rtsp流数据，保存到本地
 
-    std::string url = "rtsp://192.168.1.95:8554/yf.264";
-    std::string file_name = "./yf.264";
+    std::string url = "rtsp://192.168.16.231/b1.265";
+    std::string file_name = "./b1.265";
 
     SaveFile sf;
     if (sf.Start(url, file_name) != 0) {
