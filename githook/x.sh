@@ -2,6 +2,6 @@
 
 echo "call githook/x.sh"
 
-f 
+f 1
 exit 1
 
