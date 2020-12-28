@@ -20,7 +20,11 @@ public:
     {
     }
 
-    Person (Person const& p) : name(p.name) {
+    Person (Person& p) : name(p.name) {
+        std::cout << "COPY-CONSTR reference Person: " << name << "\n";
+    }
+
+    Person (const Person& p) : name(p.name) {
         std::cout << "COPY-CONSTR Person: " << name << "\n";
     }
 
@@ -34,6 +38,6 @@ inline void TestPerson()
     std::string s1 = "str1";
     Person p1(s1);
     Person p2("temp");
-    Person p3(p1);
+    Person p3(p1); 
 }
 
