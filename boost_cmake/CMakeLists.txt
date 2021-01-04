@@ -3,6 +3,8 @@ cmake_minimum_required(VERSION 3.0)
 project("estl-Boost")
 set(CMAKE_MODULE_PATH "${CMAKE_HOME_DIRECTORY}/../cmake")
 
+add_subdirectory(asio_connpair)
+add_subdirectory(asio_iocontext)
 add_subdirectory(bufferstream)
 add_subdirectory(circular_buffer)
 add_subdirectory(convert)
