@@ -1,0 +1,45 @@
+# 关闭格式化
+DisableFormat:	false
+
+Language:        Cpp
+BasedOnStyle:  LLVM
+IndentWidth:     4
+AccessModifierOffset: -4
+
+# 每行字符的限制，0表示没有限制
+ColumnLimit:	100
+
+# 连续空行的最大数量
+MaxEmptyLinesToKeep: 2
+
+# tab宽度
+TabWidth: 4
+# 使用tab字符: Never, ForIndentation, ForContinuationAndIndentation, Always
+UseTab:	Never
+
+# {} 配置项
+BreakBeforeBraces: Custom
+BraceWrapping:
+  AfterClass:      true
+  AfterControlStatement: false
+  AfterEnum:       true
+  AfterFunction:   true
+  AfterNamespace:  true
+  AfterObjCDeclaration: false
+  AfterStruct:     true
+  AfterUnion:      true
+  BeforeCatch:     false
+  BeforeElse:      false
+  IndentBraces:    false
+
+
+# 在构造函数的初始化列表的逗号前换行
+BreakConstructorInitializersBeforeComma: true
+# 构造函数的初始化列表的缩进宽度
+ConstructorInitializerIndentWidth:	4
+
+# 指针、引用左对齐
+PointerAlignment: Left
+
+
+
