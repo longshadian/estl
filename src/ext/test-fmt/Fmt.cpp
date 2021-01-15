@@ -10,6 +10,8 @@
 #include <fmt/format.h>
 #include <fmt/printf.h>
 
+#include "Fmt2.h"
+
 struct A 
 {
     int32_t m_int { 10086 };
@@ -57,12 +59,24 @@ void Test2()
     std::cout << fmt::to_string(buf) << " " << fmt::to_string(buf1) << "\n";
 }
 
+void Test3()
+{
+    point pp{0.222, 123.22};
+    std::cout << fmt::format("point: {}", pp) << "\n";
+
+    std::string s1 = "abc";
+    std::string_view sv{s1};
+    fmt::string_view fsv{sv};
+    std::cout << fmt::format("string_view: {}", sv) << "\n";
+}
+
 int main()
 {
     if (1) {
         // Test1();
         // TestCompileTime();
-        Test2();
+        //Test2();
+        Test3();
     }
 
     system("pause");

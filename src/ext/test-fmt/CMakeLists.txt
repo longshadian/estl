@@ -7,7 +7,8 @@ if(USE_CMAKE)
 	include_directories(${fmt_INCLUDE_DIRS})
 elseif(VCPKG_DIR)
     #### cmake模块
-    #set(CMAKE_MODULE_PATH "${CMAKE_HOME_DIRECTORY}/cmake" ${CMAKE_MODULE_PATH})
+    set(CMAKE_MODULE_PATH "${CMAKE_HOME_DIRECTORY}/../cmake" ${CMAKE_MODULE_PATH})
+	include(Functions)
 	include(Vcpkg)
 	include(VcpkgFmt)
 
@@ -24,7 +25,7 @@ if(WIN32)
 	ADD_DEFINITIONS("/utf-8")     ### utf-8 no-bom warning C4819: 
 endif(WIN32)
 
-add_executable(Fmt Fmt.cpp)
+add_executable(Fmt Fmt.cpp Fmt2.h Fmt2.cpp)
 
 if(USE_CMAKE)
 	target_link_libraries(Fmt PRIVATE fmt::fmt fmt::fmt-header-only)
