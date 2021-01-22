@@ -1,0 +1,5 @@
+ [requires]
+ffmpeg/4.3.1@cgy/stable
+
+ [generators]
+ cmake
