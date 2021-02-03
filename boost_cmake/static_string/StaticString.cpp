@@ -19,9 +19,13 @@ static void print_static_string(const boost::static_string<N>& s)
 
 static void fun()
 {
-    boost::static_string<15> s{};
+    boost::static_string<7> s{};
     s.append("12345");
     print_static_string(s);
+    std::cout << s.c_str() << "\n";
+    s.assign("1234567");
+    print_static_string(s);
+    std::cout << s.c_str() << "\n";
 }
 
 

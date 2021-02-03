@@ -32,7 +32,7 @@ elseif(CMAKE_CXX_COMPILER_ID MATCHES "GNU")
 	set(CMAKE_CXX_FLAGS "-Wall ${CMAKE_CXX_FLAGS}")	
 endif()
 
-add_executable(${PROJECT_NAME} IOContext.h IOContext.cpp)
+add_executable(${PROJECT_NAME} Main.cpp IOContext.h IOContext.cpp Strand.h Strand.cpp)
 if(USE_CMAKE)
 elseif(USE_VCPKG)
     vcpkg_find_lib_dir(${PLATFORM_TARGET} ${VCPKG_DIR} VCPKG_LIB_DIR)

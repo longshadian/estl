@@ -63,3 +63,5 @@ public:
     std::thread thd_;
 };
 
+void IOContext_Test1();
+void IOContext_Test2();

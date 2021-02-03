@@ -17,13 +17,13 @@ void EventLoop()
     g_ioctx.run();
 }
 
-void Test1()
+void IOContext_Test1()
 {
     boost::asio::post([]{});
     EventLoop();
 }
 
-void Test2()
+void IOContext_Test2()
 {
     g_ctx.LoopBackground();
 
@@ -42,15 +42,3 @@ void Test2()
     g_ctx.Stop();
 }
 
-int main()
-{
-    try {
-        Test2();
-    } catch (const std::exception& e) {
-        std::cout << "exception: "<< e.what() << "\n";
-        return -1;
-    }
-
-    std::cout << "main exit!\n";
-    return 0;
-}
