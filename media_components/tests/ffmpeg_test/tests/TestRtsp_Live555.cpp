@@ -2,7 +2,9 @@
 #include <sstream>
 
 #include <RtspPoller.h>
+#include <xffmpeg/xffmpeg.h>
 
+#include "console_log.h"
 
 class SaveFile
 {
@@ -22,6 +24,8 @@ public:
 
     FILE* f_;
     int frame_num_;
+
+    xffmpeg::MemParser mem_parser_;
 };
 
 SaveFile::SaveFile()
@@ -66,30 +70,78 @@ void SaveFile::FrameProc(
     unsigned durationInMicroseconds
 )
 {
+#if 1
     std::ostringstream ostm{};
 
     ostm << "FrameProc: " << ++frame_num_
         << " buffer_length: " << buffer_length
-        << "\n";
+        << " ";
     if (numTruncatedBytes > 0)
         ostm << " (with " << numTruncatedBytes << " bytes truncated)";
     char uSecsStr[6 + 1]; // used to output the 'microseconds' part of the presentation time
     sprintf(uSecsStr, "%06u", (unsigned)presentationTime.tv_usec);
     ostm << ".\tPresentation time: " << (int)presentationTime.tv_sec << "." << uSecsStr;
-    ostm << "\n";
-    std::cout << ostm.str();
 
-    ::fwrite(buffer, 1, buffer_length, f_);
+    ostm << " NAL:( ";
+    for (int i = 0; i != 6; ++i) {
+        ostm << int(buffer[i]) << " ";
+    }
+    ostm << " )";
+    std::cout << ostm.str() << "\n";
+#endif
+
+    static int idx = 0;
+    if (1) {
+#if 0
+        if (idx == 0 || 1) {
+            mem_parser_.AppendRawData(buffer, buffer_length);
+        } else {
+            mem_parser_.AppendRawData(buffer + 4, buffer_length - 4);
+        }
+#else
+        mem_parser_.AppendRawData(buffer + 4, buffer_length - 4);
+#endif
+        ++idx;
+        //mem_parser_.AppendRawData(buffer + 4, buffer_length - 4);
+        //mem_parser_.AppendRawData(buffer, buffer_length);
+        int parse_result{};
+        int ecode{};
+        do {
+            parse_result = mem_parser_.Parse();
+            if (parse_result < 0) {
+                logPrintWarn("parser error ecode: %d", parse_result);
+                return;
+            }
+            if (parse_result == 0) {
+                //logPrintInfo("parser no packet ecode == 0");
+                return;
+            }
+            ecode = mem_parser_.PrepareDecode();
+            if (ecode < 0) {
+                logPrintWarn("parser prepare decode ecode: %d", ecode);
+                continue;
+            }
+            logPrintInfo("--------> write: ");
+            //::fwrite(buffer, 1, buffer_length, f_);
+            ::fwrite(mem_parser_.pkt_->data, 1, mem_parser_.pkt_->size, f_);
+        } while (parse_result > 0);
+    }
 }
 
-int main()
+int TestRtsp_Live555()
 {
     // 拉取rtsp流数据，保存到本地
-
-    std::string url = "rtsp://192.168.1.95:8554/yf.264";
-    std::string file_name = "./yf.264";
-
     SaveFile sf;
+#if 0
+    std::string url = "rtsp://192.168.1.95:8554/beijing.264";
+    std::string file_name = "./beijing.264";
+    sf.mem_parser_.Init_H264();
+#else 
+    std::string url = "rtsp://192.168.16.231/airport2.265";
+    std::string file_name = "./airport2.265";
+    sf.mem_parser_.Init_H265();
+#endif
+
     if (sf.Start(url, file_name) != 0) {
         return -1;
     }

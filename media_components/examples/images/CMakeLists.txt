@@ -1,7 +1,6 @@
 set_property(GLOBAL PROPERTY USE_FOLDERS On)
 
-#project(NvCodec9 CXX)
-set(PROJECT_NAME NvCodec9)
+set(PROJECT_NAME image_test)
 
 if(NOT CUDA_TOOLKIT_ROOT_DIR)
     set(CUDA_TOOLKIT_ROOT_DIR "/usr/local/cuda-10.2")
@@ -28,7 +27,7 @@ message("-------> CUDA_nvcuvid_LIBRARY      ${CUDA_nvcuvid_LIBRARY}")
 set(CMAKE_MODULE_PATH
     "${CMAKE_HOME_DIRECTORY}/cmake"
     "${CMAKE_MODULE_PATH}"
-)
+    )
 
 #### cmake模块
 include(Functions)
@@ -37,25 +36,37 @@ include(Functions)
 set(SRC_DIR "${CMAKE_CURRENT_LIST_DIR}")
 util_auto_sources(SRC_C_FILES "*.c" "RECURSE" "${SRC_DIR}")
 util_auto_sources(SRC_CPP_FILES "*.cpp" "RECURSE" "${SRC_DIR}")
-util_auto_sources(SRC_CU_FILES "*.cu" "RECURSE" "${SRC_DIR}")
 util_auto_sources(SRC_H_FILES "*.h" "RECURSE" "${SRC_DIR}")
 util_auto_sources(SRC_HPP_FILES "*.hpp" "RECURSE" "${SRC_DIR}")
 util_auto_source_group(src ${SRC_DIR} 
     ${SRC_C_FILES}
     ${SRC_CPP_FILES}
-    ${SRC_CU_FILES}
     ${SRC_H_FILES}
     ${SRC_HPP_FILES}
 )
 
 #### 编译选项
-set(CMAKE_CXX_STANDARD 14)
-set(CMAKE_CXX_EXTENSIONS false)
-set(CMAKE_CXX_STANDARD_REQUIRED true)
+if(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
+elseif(CMAKE_CXX_COMPILER_ID MATCHES "GNU")
+	set(CMAKE_CXX_FLAGS "-Wall -std=c++14 ${CMAKE_CXX_FLAGS}")	
+endif()
 
 include_directories(
-    "${CMAKE_CURRENT_LIST_DIR}"
+    ${CUDA_INCLUDE_DIRS}
+    "${CMAKE_HOME_DIRECTORY}"
+    "${CMAKE_HOME_DIRECTORY}/src"
 )
 
-set(CUDA_NVCC_FLAGS "-std=c++14")
-CUDA_ADD_LIBRARY(${PROJECT_NAME} SHARED ${SRC_C_FILES} ${SRC_CPP_FILES} ${SRC_CU_FILES})
+add_executable(${PROJECT_NAME} 
+    ${SRC_C_FILES}
+    ${SRC_CPP_FILES}
+)
+
+#### 链接选项
+target_link_libraries(${PROJECT_NAME} 
+    media_comm NvCodec9
+    nvcuvid nvidia-encode cuda
+    crypto ssl
+    pthread
+)
+

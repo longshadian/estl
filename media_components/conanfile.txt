@@ -1,0 +1,6 @@
+ [requires]
+ffmpeg/4.3.1@bolan/stable
+nvcodec/9.1.23@bolan/stable
+
+ [generators]
+ cmake

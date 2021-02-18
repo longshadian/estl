@@ -66,6 +66,7 @@ void SaveFile::FrameProc(
     unsigned durationInMicroseconds
 )
 {
+#if 1
     std::ostringstream ostm{};
 
     ostm << "FrameProc: " << ++frame_num_
@@ -76,8 +77,14 @@ void SaveFile::FrameProc(
     char uSecsStr[6 + 1]; // used to output the 'microseconds' part of the presentation time
     sprintf(uSecsStr, "%06u", (unsigned)presentationTime.tv_usec);
     ostm << ".\tPresentation time: " << (int)presentationTime.tv_sec << "." << uSecsStr;
-    ostm << "\n";
-    std::cout << ostm.str();
+
+    ostm << "\nNAL:( ";
+    for (int i = 0; i != 6; ++i) {
+        ostm << int(buffer[i]) << " ";
+    }
+    ostm << " )";
+    std::cout << ostm.str() << "\n";
+#endif
 
     ::fwrite(buffer, 1, buffer_length, f_);
 }
@@ -86,8 +93,13 @@ int main()
 {
     // 拉取rtsp流数据，保存到本地
 
+#if 1
     std::string url = "rtsp://192.168.1.95:8554/yf.264";
     std::string file_name = "./yf.264";
+#else 
+    std::string url = "rtsp://192.168.16.231/airport2.265";
+    std::string file_name = "./yf.265";
+#endif
 
     SaveFile sf;
     if (sf.Start(url, file_name) != 0) {

@@ -43,10 +43,10 @@ if(VCPKG_DIR)
     #### TODO MSVC
 else()
     #### TODO find_package
-    include_directories("/home/bolan/libs/include/live555/BasicUsageEnvironment/include")
-    include_directories("/home/bolan/libs/include/live555/groupsock/include")
-    include_directories("/home/bolan/libs/include/live555/liveMedia/include")
-    include_directories("/home/bolan/libs/include/live555/UsageEnvironment/include")
+    include_directories("/home/bolan/works/mylibs/live555/BasicUsageEnvironment/include")
+    include_directories("/home/bolan/works/mylibs/live555/groupsock/include")
+    include_directories("/home/bolan/works/mylibs/live555/liveMedia/include")
+    include_directories("/home/bolan/works/mylibs/live555/UsageEnvironment/include")
 endif()
 
 include_directories(${CMAKE_HOME_DIRECTORY}/src/rtmp_components)
