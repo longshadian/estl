@@ -21,7 +21,7 @@ FFMpegClient::FFMpegClient(FrameCallback cb)
     , pkt_{}
     , running_{}
     , inited_{}
-    , last_read_tp_{}
+    , last_read_timepoint_{}
     , cb_{std::move(cb)}
     , read_timeout_{}
     , url_{}
@@ -40,13 +40,18 @@ FFMpegClient::~FFMpegClient()
 
 int FFMpegClient::Init()
 {
+    // 设置选项
+    int ecode{};
+    ecode = PrepareOptions();
+    if (ecode < 0)
+        return ecode;
+
     ifmt_ctx_ = ::avformat_alloc_context();
     ifmt_ctx_->interrupt_callback.callback = &FFMpegClient::CheckInterrupt;
     ifmt_ctx_->interrupt_callback.opaque = this;
 
-    // 1. 打开输入
-    // 1.1 读取文件头，获取封装格式相关信息
-    int ecode = ::avformat_open_input(&ifmt_ctx_, url_.c_str(), 0, &options_);
+    // 1. 打开输入获取封装格式相关信息
+    ecode = ::avformat_open_input(&ifmt_ctx_, url_.c_str(), 0, &options_);
 
     if (ecode < 0) {
         char buf[512] = { 0 };
@@ -55,13 +60,13 @@ int FFMpegClient::Init()
         return ecode;
     }
 
-    // 1.2 解码一段数据，获取流相关信息
+    // 解码一段数据，获取流相关信息
     if ((ecode = ::avformat_find_stream_info(ifmt_ctx_, 0)) < 0) {
         FFMPEGX_LOG_WARN("Failed to retrieve input stream information");
         return ecode;
     }
 
-    ::av_dump_format(ifmt_ctx_, 0, url_.c_str(), 0);
+    //::av_dump_format(ifmt_ctx_, 0, url_.c_str(), 0);
     for (unsigned i = 0; i < ifmt_ctx_->nb_streams; i++) {
         AVStream* in_stream = ifmt_ctx_->streams[i];
         AVCodecParameters* in_codecpar = in_stream->codecpar;
@@ -69,7 +74,13 @@ int FFMpegClient::Init()
         AVCodecParameters_to_string(in_codecpar, stsm);
         FFMPEGX_LOG_INFO("params: %d %s", in_codecpar->codec_type, stsm.str().c_str());
         if (in_codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
-            FFMPEGX_LOG_INFO("i--------------------");
+            if (in_codecpar->codec_id == AV_CODEC_ID_H264) {
+                video_codec_info_.codec_type = ECodecType::H264;
+            } else if (in_codecpar->codec_id == AV_CODEC_ID_HEVC) {
+                video_codec_info_.codec_type = ECodecType::HEVC;
+            }
+            video_codec_info_.width = in_codecpar->width;
+            video_codec_info_.height = in_codecpar->height;
         }
     }
 
@@ -81,27 +92,25 @@ int FFMpegClient::Loop()
 {
     running_ = true;
     int ecode{};
-    MicrosecondTimer timer;
     pkt_ = ::av_packet_alloc();
     while (running_) {
         // 此处如果是从rtsp server获取的流，这个耗时就是每帧耗时。
-        timer.Start();
         // 3.2 从输出流读取一个packet
         ecode = ::av_read_frame(ifmt_ctx_, pkt_);
-        timer.Stop();
         if (ecode < 0) {
             FFMPEGX_LOG_WARN("read av_read_frame failure, ecode: %d", ecode);
             break;
         }
-        last_read_tp_ = Clock::now();
+        last_read_timepoint_ = Clock::now();
         
-        FFMPEGX_LOG_INFO("stream index: %d   cost: %f",  static_cast<int>(pkt_->stream_index), timer.GetMilliseconds());
+        //FFMPEGX_LOG_INFO("stream index: %d   cost: %f",  static_cast<int>(pkt_->stream_index), timer.GetMilliseconds());
         OnReadPkt(pkt_);
         ::av_packet_unref(pkt_);
     }
-    return 0;
+    return ecode;
 }
 
+#if 0
 int FFMpegClient::OnReadPkt(AVPacket* pkt)
 {
     int idx = pkt->stream_index;
@@ -124,6 +133,18 @@ int FFMpegClient::OnReadPkt(AVPacket* pkt)
     }
     return 0;
 }
+#endif
+
+int FFMpegClient::OnReadPkt(AVPacket* pkt)
+{
+    int idx = pkt->stream_index;
+    AVStream* in_stream = ifmt_ctx_->streams[idx];
+    AVCodecParameters* in_codecpar = in_stream->codecpar;
+    if (in_codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
+        cb_(&video_codec_info_, static_cast<const std::uint8_t*>(pkt->data), pkt->size);
+    }
+    return 0;
+}
 
 int FFMpegClient::CheckInterrupt(void* ctx)
 {
@@ -139,7 +160,12 @@ int FFMpegClient::CheckInterruptEx()
         return 1;
     auto tnow = std::chrono::steady_clock::now();
     //FFMPEGX_LOG_WARN("-------------> timeout");
-    return (tnow - last_read_tp_) > read_timeout_;
+    return (tnow - last_read_timepoint_) > read_timeout_;
+}
+
+int FFMpegClient::PrepareOptions()
+{
+    return 0;
 }
 
 //=======================================================================
@@ -324,19 +350,26 @@ public:
     virtual int Init() override
     {
         g_file.open("C:/github/estl/ffmpeg/ffmpeg_v4/rtsp.264");
+        return Super::Init();
+    }
+
+    virtual int PrepareOptions() override
+    {
         int ecode{};
         if (param_.protocol_type == TCP) {
             ecode = ::av_dict_set(&options_, "rtsp_transport", "tcp", 0);
-            ecode = ::av_dict_set(&options_, "stimeout", "5000000", 0);
         } else if (param_.protocol_type == UDP) {
             ecode = ::av_dict_set(&options_, "rtsp_transport", "udp", 0);
-            ecode = ::av_dict_set(&options_, "stimeout", "5000000", 0);
         }
         if (ecode < 0) {
-            FFMPEGX_LOG_WARN("set rtsp_transport: %d failure", param_.protocol_type);
             return ecode;
         }
-        return Super::Init();
+        ecode = ::av_dict_set(&options_, "stimeout", "5000000", 0);
+        if (ecode < 0) {
+            FFMPEGX_LOG_WARN("set : stimeout %d failure", param_.protocol_type);
+            return ecode;
+        }
+        return 0;
     }
 
     RtspParam  param_;
@@ -407,178 +440,6 @@ public:
     MemParser parser_;
     RtmpParam  param_;
 };
-
-class FFMpegSdk
-{
-public:
-    using RtspTask = std::function<void()>;
-
-    FFMpegSdk();
-    ~FFMpegSdk();
-
-    int Init();
-    void Cleanup();
-    int StartPullRtsp(const RtspParam* param, FrameCallback user_cb, RtspHandle* hdl);
-    int StopPullRtsp(RtspHandle hdl);
-    void PostTask(RtspTask t);
-    void Async_ClientReceivedFrame(RtspHandle hdl, std::shared_ptr<RtspRawFrame> frame);
-    std::unique_ptr<RtspRawFrame> CreateRtspRawFrame();
-private:
-    void ThreadRun();
-    void Async_CreateNewClient(RtspHandle hdl, std::shared_ptr<RtspParam> param, FrameCallback cb);
-    void ClientStopPull(RtspHandle hdl);
-    void OnCreateNewClient(RtspHandle new_hdl, std::shared_ptr<RtspParam> param, FrameCallback user_cb);
-    void OnRawFrameReceived(RtspHandle hdl, std::shared_ptr<RtspRawFrame> frame);
-    RtspClientImpl* FindClient(RtspHandle hdl);
-
-private:
-    std::atomic<bool>                   running_;
-    std::atomic<RtspHandle>             next_hdl_;
-    std::mutex                          mtx_;
-    std::condition_variable             cond_;
-    std::queue<RtspTask>                queue_;
-    std::unordered_map<RtspHandle, std::shared_ptr<FFMpegClient>> clients_;
-    std::thread                         thd_;
-};
-
-FFMpegSdk::FFMpegSdk()
-    : running_{}
-    , next_hdl_{}
-    , mtx_{}
-    , cond_{}
-    , queue_{}
-    , clients_{}
-    , thd_{}
-{
-}
-
-FFMpegSdk::~FFMpegSdk()
-{
-    Cleanup();
-    if (thd_.joinable())
-        thd_.join();
-}
-
-int FFMpegSdk::Init()
-{
-    running_ = true;
-    std::thread temp_thd{
-        [this] { this->ThreadRun(); }
-    };
-    std::swap(thd_, temp_thd);
-    return 0;
-}
-
-void FFMpegSdk::Cleanup()
-{
-    running_ = false;
-    PostTask([] {});
-}
-
-int FFMpegSdk::StartPullRtsp(const RtspParam* param, FrameCallback user_cb, RtspHandle* hdl)
-{
-    auto new_hdl = ++next_hdl_;
-    auto p = std::make_shared<RtspParam>(*param);
-    Async_CreateNewClient(new_hdl, std::move(p), std::move(user_cb));
-    *hdl = new_hdl;
-    return 0;
-}
-
-int FFMpegSdk::StopPullRtsp(RtspHandle hdl)
-{
-    PostTask([this, hdl]() mutable
-        {
-            this->ClientStopPull(hdl);
-        });
-    return 0;
-}
-
-void FFMpegSdk::Async_ClientReceivedFrame(RtspHandle hdl, std::shared_ptr<RtspRawFrame> frame)
-{
-    PostTask([this, hdl, frame_ex = std::move(frame)]() mutable
-    {
-        this->OnRawFrameReceived(hdl, std::move(frame_ex));
-    });
-}
-
-std::unique_ptr<RtspRawFrame> FFMpegSdk::CreateRtspRawFrame()
-{
-    return std::make_unique<RtspRawFrame>();
-}
-
-void FFMpegSdk::PostTask(RtspTask t)
-{
-    std::lock_guard<std::mutex> lk{ mtx_ };
-    queue_.emplace(std::move(t));
-    cond_.notify_one();
-}
-
-void FFMpegSdk::ThreadRun()
-{
-    RtspTask task{};
-    while (running_) {
-        {
-            std::unique_lock<std::mutex> lk{ mtx_ };
-            cond_.wait(lk, [this]() { return !queue_.empty(); });
-            task = std::move(queue_.front());
-            queue_.pop();
-        }
-        try {
-            task();
-        }
-        catch (...) {
-        }
-    }
-}
-
-void FFMpegSdk::Async_CreateNewClient(RtspHandle hdl, std::shared_ptr<RtspParam> param, FrameCallback cb)
-{
-    PostTask([this, hdl, param_ex = std::move(param), cb_ex = std::move(cb)]() mutable
-    {
-        this->OnCreateNewClient(hdl, std::move(param_ex), std::move(cb_ex));
-    });
-}
-
-void FFMpegSdk::ClientStopPull(RtspHandle hdl)
-{
-    auto* client = FindClient(hdl);
-    if (!client)
-        return;
-    client->Stop();
-    clients_.erase(hdl);
-}
-
-void FFMpegSdk::OnCreateNewClient(RtspHandle new_hdl, std::shared_ptr<RtspParam> param, FrameCallback user_cb)
-{
-    std::shared_ptr<FFMpegClient> new_client{ CreateClient(user_cb, param.get() };
-    int ecode = new_client->Init();
-    if (ecode) {
-
-    }
-    clients_.emplace(new_hdl, std::move(new_client));
-}
-
-void FFMpegSdk::OnRawFrameReceived(RtspHandle hdl, std::shared_ptr<RtspRawFrame> frame)
-{
-    // 1. client不存在，移除此client
-    // 2. client存在，执行user cb
-    auto* client = FindClient(hdl);
-    if (!client) {
-        client->Stop();
-        clients_.erase(hdl);
-        client = nullptr;
-        return;
-    }
-    client->user_cb_(client->hdl_, &frame->info_, frame->data_.data(), static_cast<std::int32_t>(frame->data_.size()));
-}
-
-FFMpegClient* FFMpegSdk::FindClient(RtspHandle hdl)
-{
-    auto it = clients_.find(hdl);
-    if (it == clients_.end())
-        return nullptr;
-    return it->second.get();
-}
 
 FFMpegClient* CreateClient(FrameCallback cb, const RtspParam* param)
 {

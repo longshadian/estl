@@ -1,7 +1,10 @@
 #include <iostream>
 #include <sstream>
+#include <thread>
+#include <chrono>
+#include <functional>
 
-#include <RtspPoller.h>
+#include <RtspSDK.h>
 
 
 class SaveFile
@@ -16,6 +19,11 @@ public:
         unsigned numTruncatedBytes,
         struct timeval presentationTime,
         unsigned durationInMicroseconds
+    );
+
+    void FrameProc2(
+        media::RtspHandle hdl, const media::RtspRawFrameInfo* info,
+        std::uint8_t* buffer, std::int32_t buffer_length
     );
 
     int Start(std::string rtsp_uri, std::string file_name);
@@ -46,16 +54,40 @@ int SaveFile::Start(std::string rtsp_uri, std::string file_name)
         return -1;
     }
 
-    RtspPoller impl;
-    RtspPollerParams params;
-    params.url = std::move(rtsp_uri);
-    params.frame_proc = std::bind(&SaveFile::FrameProc, this, _1, _2, _3, _4, _5);
-    if (!impl.Init(std::move(params))) {
-        std::cout << "init error\n";
-        return -1;
+    media::RtspSDK impl;
+    impl.Init();
+
+    media::RtspParam param{};
+    param.protocol_type = media::EProtocolType::UDP;
+    media::RtspHandle hdl{};
+    auto f = std::bind(&SaveFile::FrameProc2, this, _1, _2, _3, _4);
+    impl.StartPullRtsp(&param, rtsp_uri, f, &hdl);
+    while (1) {
+        std::this_thread::sleep_for(std::chrono::seconds{1});
     }
-    impl.Loop();
     return 0;
+}
+
+void SaveFile::FrameProc2(
+    media::RtspHandle hdl, const media::RtspRawFrameInfo* info,
+    std::uint8_t* buffer, std::int32_t buffer_length
+)
+{
+#if 1
+    std::ostringstream ostm{};
+
+    ostm << "FrameProc: " << ++frame_num_
+        << " buffer_length: " << buffer_length
+        << "\n";
+    ostm << "\nNAL:( ";
+    for (int i = 0; i != 6; ++i) {
+        ostm << int(buffer[i]) << " ";
+    }
+    ostm << " )";
+    std::cout << ostm.str() << "\n";
+#endif
+
+    ::fwrite(buffer, 1, buffer_length, f_);
 }
 
 void SaveFile::FrameProc(
@@ -94,7 +126,8 @@ int main()
     // 拉取rtsp流数据，保存到本地
 
 #if 1
-    std::string url = "rtsp://192.168.1.95:8554/yf.264";
+    //std::string url = "rtsp://192.168.1.95:8554/yf.264";
+    std::string url = "rtsp://admin:s6Gw%25m%24X%24viqT@192.168.70.18:554";
     std::string file_name = "./yf.264";
 #else 
     std::string url = "rtsp://192.168.16.231/airport2.265";

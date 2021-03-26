@@ -13,7 +13,8 @@ int RtspTest()
 {
 
     ffmpegx::RtspParam param{};
-    param.url = "rtsp://192.168.1.28:8554/xiaoen.264";
+    //param.url = "rtsp://192.168.1.28:8554/xiaoen.264";
+    param.url = "rtsp://10.106.104.3:554/openUrl/MSsUS9W";
     param.protocol_type = ffmpegx::TCP;
 
     std::unique_ptr<ffmpegx::FFMpegClient> client{ ffmpegx::CreateClient({}, &param) };

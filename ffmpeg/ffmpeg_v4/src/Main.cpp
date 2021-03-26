@@ -3,8 +3,8 @@
 
 int main(int argc, char **argv)
 {
-    //RtspTest();
-    RtmpTest();
+    RtspTest();
+    //RtmpTest();
 
     return 0;
 }

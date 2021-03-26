@@ -34,7 +34,7 @@ namespace ffmpegx
 // Video解码类型
 enum ECodecType
 {
-    UnknownType = 0,
+    UnknownType = -1,
     H264 = 1000,
     HEVC = 2000,
 };
@@ -49,7 +49,7 @@ enum EProtocolType
 // 未解码原始帧数据信息
 struct RawFrameInfo
 {
-    std::int32_t codec_type{};    // 编码格式
+    std::int32_t codec_type{ ECodecType ::UnknownType};    // 编码格式
     std::int32_t width{};         // 宽
     std::int32_t height{};        // 高
 };
@@ -57,7 +57,7 @@ struct RawFrameInfo
 using RtspHandle = std::uint32_t;
 
 using FrameCallback
-    = std::function<void(const RawFrameInfo* info, std::uint8_t* buffer, std::int32_t buffer_length)>;
+    = std::function<void(const RawFrameInfo* info, const std::uint8_t* buffer, std::int32_t buffer_length)>;
 
 struct RtspParam
 {
@@ -90,14 +90,18 @@ public:
     static int CheckInterrupt(void* ctx);
     int CheckInterruptEx();
 
+protected:
+    virtual int PrepareOptions();
+
 public:
     AVFormatContext* ifmt_ctx_;
     AVDictionary*   options_;
     AVPacket* pkt_;
     bool running_;
     bool inited_;
-    Clock::time_point last_read_tp_;
+    Clock::time_point last_read_timepoint_;
     FrameCallback  cb_;
+    RawFrameInfo video_codec_info_;
 
 protected:
     std::chrono::milliseconds read_timeout_;
@@ -106,24 +110,6 @@ protected:
 
 FFMpegClient* CreateClient(FrameCallback cb, const RtspParam*  param);
 FFMpegClient* CreateClient(FrameCallback cb, const RtmpParam*  param);
-
-/*
-class FFMpegSdk
-{
-public:
-    FFMpegSdk();
-    ~FFMpegSdk();
-
-    int Init();
-    void Cleanup();
-    int StartPullRtsp(const RtspParam* param, FrameCallback cb, RtspHandle* hdl);
-    int StopPullRtsp(RtspHandle hdl);
-
-private:
-    std::mutex mtx_;
-
-};
-*/
 
 } // namespace ffmpegx
 
