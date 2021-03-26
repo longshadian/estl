@@ -7,7 +7,7 @@
 #include <vector>
 #include <sstream>
 
-#include "ffmpegx/FFMpegSdk.h"
+#include "ffmpegx/FFMpegx.h"
 
 int RtspTest()
 {

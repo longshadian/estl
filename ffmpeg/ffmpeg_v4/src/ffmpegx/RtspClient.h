@@ -1,5 +1,5 @@
-#ifndef _FFMPEGX_CLIENT_H
-#define _FFMPGEX_CLIENT_H
+#ifndef _FFMPEGX_RTSPCLIENT_H
+#define _FFMPEGX_RTSPCLIENT_H
 
 #include <atomic>
 #include <condition_variable>
@@ -54,7 +54,6 @@ struct RawFrameInfo
     std::int32_t height{};        // 高
 };
 
-using RtspHandle = std::uint32_t;
 
 using FrameCallback
     = std::function<void(const RawFrameInfo* info, const std::uint8_t* buffer, std::int32_t buffer_length)>;
@@ -113,5 +112,5 @@ FFMpegClient* CreateClient(FrameCallback cb, const RtmpParam*  param);
 
 } // namespace ffmpegx
 
-#endif // !_FFMPEGX_CLIENT_H
+#endif // !_FFMPEGX_RTSPCLIENT_H
 
