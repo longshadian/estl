@@ -142,16 +142,109 @@ void Test3()
     LogInfo << std::is_same_v<std::string, std::decay_t<const std::string&&>>;
 }
 
+struct A
+{
+    A(const A&) = delete;
+    A& operator=(const A&) = delete;
+
+    A(A&&) = default;
+    A& operator=(A&&) = default;
+
+    int a{};
+};
+
+struct A1
+{
+    int a;
+};
+
+struct A2
+{
+    A2() = default;
+    int a;
+};
+
+struct A3
+{
+    A3() = default;
+    int a{};
+};
+
+struct B
+{
+    B() = default;
+
+    B(const B&) { LogInfo << "B copy constructor"; }
+    B& operator=(const B&) { LogInfo << "B copy constructor"; return *this; }
+
+    B(B&&) { LogInfo << "B move constructor"; }
+    B& operator=(B&&) { LogInfo << "B move assignment constructor"; return *this; }
+};
+
+struct B1
+{
+    B1(const B1&) = default;
+    B1& operator=(const B1&) = default;
+
+    B1(B1&&) = delete;
+    B1& operator=(B1&&) = delete;
+};
+
+struct C
+{
+    A a{};
+    A1 a1;
+    A2 a2;
+    A3 a3;
+    B b{};
+    //B1 b1{};
+    int i{};
+};
+
+void Test4()
+{
+    C c1{};
+    C c2{};
+    c2 = std::move(c1);
+    C c3{std::move(c2)};
+
+    LogInfo << "A   is trivial " << std::is_trivial<A>::value;
+    LogInfo << "A1  is trivial " << std::is_trivial<A1>::value;
+    LogInfo << "A2  is trivial " << std::is_trivial<A2>::value;
+    LogInfo << "A3  is trivial " << std::is_trivial<A3>::value;
+    LogInfo << "B   is trivial " << std::is_trivial<B>::value;
+    LogInfo << "B1  is trivial " << std::is_trivial<B1>::value;
+    LogInfo << "C   is trivial " << std::is_trivial<C>::value;
+
+    LogInfo << "A   is is_standard_layout " << std::is_standard_layout<A>::value;
+    LogInfo << "A1  is is_standard_layout " << std::is_standard_layout<A1>::value;
+    LogInfo << "A2  is is_standard_layout " << std::is_standard_layout<A2>::value;
+    LogInfo << "A3  is is_standard_layout " << std::is_standard_layout<A3>::value;
+    LogInfo << "B   is is_standard_layout " << std::is_standard_layout<B>::value;
+    LogInfo << "B1  is is_standard_layout " << std::is_standard_layout<B1>::value;
+    LogInfo << "C   is is_standard_layout " << std::is_standard_layout<C>::value;
+
+    LogInfo << "A   is pod " << std::is_pod<A>::value;
+    LogInfo << "A1  is pod " << std::is_pod<A1>::value;
+    LogInfo << "A2  is pod " << std::is_pod<A2>::value;
+    LogInfo << "A3  is pod " << std::is_pod<A3>::value;
+    LogInfo << "B   is pod " << std::is_pod<B>::value;
+    LogInfo << "B1  is pod " << std::is_pod<B1>::value;
+    LogInfo << "C   is pod " << std::is_pod<C>::value;
+
+}
+
 } // namespace test_move
 
-#if 0
+#if 1
 TEST_CASE("TestMove")
 {
     using namespace test_move;
     PrintInfo("TestMove %d", 123);
-    CHECK(TestMove() == 0);
+    //CHECK(TestMove() == 0);
     // TestMove2();
     // Test3();
+    Test4();
 }
 #endif
 
