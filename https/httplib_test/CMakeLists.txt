@@ -4,5 +4,6 @@ add_subdirectory(httplib)
 add_subdirectory(upload_test)
 add_subdirectory(server_test)
 add_subdirectory(shttp_test)
+add_subdirectory(client_upload)
 
 
