@@ -1,0 +1,35 @@
+
+set(PROJECT_NAME 
+    main 
+    LANGUAGES CXX)
+project(${PROJECT_NAME})
+
+# message(STATUS "CMAKE_PREFIX_PATH: ${CMAKE_PREFIX_PATH}")
+if(FALSE)
+    set(OUTPUT_DIR ${CMAKE_BINARY_DIR}/output)
+    set(CMAKE_LIBRARY_OUTPUT_DIRECTORY_DEBUG ${OUTPUT_DIR}/debug/lib)
+    set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY_DEBUG ${OUTPUT_DIR}/debug/lib)
+    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_DEBUG ${OUTPUT_DIR}/debug/bin)
+    set(CMAKE_LIBRARY_OUTPUT_DIRECTORY_RELEASE ${OUTPUT_DIR}/release/lib)
+    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE ${OUTPUT_DIR}/release/bin)
+    set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY_RELEASE ${OUTPUT_DIR}/release/lib)
+endif()
+
+include(${PROJECT_SOURCE_DIR}/version.cmake)
+
+message("PROJECT_VERSION ${PROJECT_VERSION}")
+message("PROJECT_SOURCE_DIR ${PROJECT_SOURCE_DIR}")
+message("PROJECT_BINARY_DIR ${PROJECT_BINARY_DIR}")
+
+#### cmake模块
+include_directories(${CMAKE_HOME_DIRECTORY})
+
+add_executable(${PROJECT_NAME} "Main.cpp")
+target_link_libraries(${PROJECT_NAME} )
+
+configure_file(
+    ${PROJECT_SOURCE_DIR}/Version.h.in
+    ${PROJECT_SOURCE_DIR}/Version.h
+    )
+
+#set_target_properties(${PROJECT_NAME} PROPERTIES VERSION ${PROJECT_VERSION})

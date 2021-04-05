@@ -1,0 +1,16 @@
+#pragma once
+
+/*
+#define MAIN_VERSION_MAJOR  1
+#define MAIN_VERSION_MINOR  2
+#define MAIN_VERSION_PATCH  3
+#define MAIN_VERSION_TWEAK  4
+#define MAIN_VERION "1.2.3.4.x"
+*/
+
+#define MAIN_VERSION_MAJOR 11
+#define MAIN_VERSION_MINOR 12
+#define MAIN_VERSION_PATCH 13
+#define MAIN_VERSION_TWEAK 14
+#define MAIN_VERSION "11.12.13.14"
+
